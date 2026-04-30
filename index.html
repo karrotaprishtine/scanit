@@ -1,0 +1,421 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Barcode & QR Studio</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div class="hero-topline">
+          <div class="hero-signature">
+            <span class="hero-signature-dot" aria-hidden="true"></span>
+            <span class="hero-signature-text">Barcode &amp; QR Studio</span>
+          </div>
+          <div class="hero-controls">
+            <button class="secondary-button hero-cycle-button" id="heroShuffleButton" type="button">New vibe</button>
+            <button class="theme-toggle" id="themeToggleButton" type="button" aria-pressed="false">
+              <span class="theme-toggle-track" aria-hidden="true">
+                <span class="theme-toggle-swatch theme-toggle-swatch-light"></span>
+                <span class="theme-toggle-swatch theme-toggle-swatch-dark"></span>
+              </span>
+              <span id="themeToggleLabel">Dark mode</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="hero-content">
+          <div class="hero-copy">
+            <p class="hero-label" id="heroLabel">Scan mood</p>
+            <h1 id="heroTitle">Tap it. Scan it. Smile a little.</h1>
+            <p class="hero-text" id="heroDescription">
+              Make QR codes first, keep barcodes ready, and export clean files without the noise.
+            </p>
+            <div class="hero-cta-row">
+              <button class="secondary-button hero-shortcut-button" id="heroQrButton" type="button">Open QR</button>
+              <button class="secondary-button hero-shortcut-button" id="heroBarcodeButton" type="button">Open Barcode</button>
+            </div>
+          </div>
+
+          <div class="hero-art" aria-hidden="true">
+            <span class="hero-orb hero-orb-a"></span>
+            <span class="hero-orb hero-orb-b"></span>
+            <span class="hero-orb hero-orb-c"></span>
+            <span class="hero-grid-mark"></span>
+            <div class="hero-art-card">
+              <span class="hero-art-chip">scan + smile</span>
+              <div class="hero-scan-mark">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <strong>QR first.</strong>
+              <p>Flip the mood, scan the code, keep the page clean.</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <nav class="mode-switch" aria-label="Generator mode">
+        <button
+          class="mode-button active"
+          id="qrModeButton"
+          data-mode="qr"
+          type="button"
+        >
+          <span class="mode-icon mode-icon-qr" aria-hidden="true">QR</span>
+          <span>
+            <strong>QR Code</strong>
+            <small>Website, WiFi, vCard, event and more</small>
+          </span>
+        </button>
+        <button
+          class="mode-button"
+          id="barcodeModeButton"
+          data-mode="barcode"
+          type="button"
+        >
+          <span class="mode-icon" aria-hidden="true">EAN</span>
+          <span>
+            <strong>Barcode</strong>
+            <small>Clear EAN-13 workspace</small>
+          </span>
+        </button>
+      </nav>
+
+      <main class="workspace">
+        <section class="builder-panel">
+          <section class="tool-panel" id="barcodePanel" aria-labelledby="barcodeModeButton">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">Barcode Generator</p>
+                <h2>EAN-13 with automatic check-digit handling</h2>
+              </div>
+              <p class="section-note">
+                Use 12 digits to auto-complete, or 13 digits to validate.
+              </p>
+            </div>
+
+            <form id="barcodeForm" class="card form-card" novalidate>
+              <div class="field-grid field-grid-2">
+                <label class="field">
+                  <span>EAN-13 digits</span>
+                  <input
+                    id="barcodeDigits"
+                    name="barcodeDigits"
+                    inputmode="numeric"
+                    maxlength="13"
+                    autocomplete="off"
+                    placeholder="3812345678908"
+                    required
+                  >
+                  <small class="field-hint">Digits only. Spaces and hyphens are removed automatically.</small>
+                </label>
+                <label class="field">
+                  <span>File name label</span>
+                  <input
+                    id="barcodeLabel"
+                    name="barcodeLabel"
+                    maxlength="60"
+                    autocomplete="off"
+                    placeholder="barcode-item"
+                  >
+                  <small class="field-hint">Optional. Used for the downloaded file name.</small>
+                </label>
+              </div>
+
+              <div class="field-grid field-grid-3">
+                <label class="field">
+                  <span>Module width</span>
+                  <input id="barcodeModuleWidth" name="barcodeModuleWidth" type="number" min="1" max="10" step="0.5" value="3">
+                  <small class="field-hint">Wider bars for bigger print output.</small>
+                </label>
+                <label class="field">
+                  <span>Bar height</span>
+                  <input id="barcodeHeight" name="barcodeHeight" type="number" min="60" max="280" step="5" value="132">
+                  <small class="field-hint">Excludes the human-readable digits underneath.</small>
+                </label>
+                <label class="field">
+                  <span>Quiet zone</span>
+                  <input id="barcodeQuietZone" name="barcodeQuietZone" type="number" min="8" max="32" step="1" value="11">
+                  <small class="field-hint">Margin in modules at the left and right side.</small>
+                </label>
+              </div>
+
+              <div class="field-grid field-grid-3">
+                <label class="field">
+                  <span>Digit size</span>
+                  <input id="barcodeTextSize" name="barcodeTextSize" type="number" min="14" max="56" step="1" value="28">
+                  <small class="field-hint">Controls the size of the numbers under the barcode.</small>
+                </label>
+                <label class="field">
+                  <span>Digit font family</span>
+                  <input
+                    id="barcodeFontFamily"
+                    name="barcodeFontFamily"
+                    list="barcodeFontFamilyList"
+                    maxlength="120"
+                    autocomplete="off"
+                    placeholder="Arial"
+                  >
+                  <datalist id="barcodeFontFamilyList">
+                    <option value="OCR B Std"></option>
+                    <option value="OCR-B"></option>
+                    <option value="Arial"></option>
+                    <option value="Helvetica"></option>
+                    <option value="Trebuchet MS"></option>
+                    <option value="Tahoma"></option>
+                    <option value="Verdana"></option>
+                    <option value="Segoe UI"></option>
+                    <option value="Calibri"></option>
+                    <option value="Cambria"></option>
+                    <option value="Georgia"></option>
+                    <option value="Times New Roman"></option>
+                    <option value="Courier New"></option>
+                    <option value="Consolas"></option>
+                    <option value="Franklin Gothic Medium"></option>
+                    <option value="Palatino Linotype"></option>
+                    <option value="Century Gothic"></option>
+                    <option value="Lucida Sans Unicode"></option>
+                  </datalist>
+                  <div class="font-loader-row">
+                    <button class="ghost-button font-loader-button" id="loadInstalledFontsButton" type="button">Load this PC fonts</button>
+                    <small class="field-hint font-loader-status" id="barcodeFontAccessStatus">Fonts from the web folder load automatically. This button adds the fonts installed on this PC too.</small>
+                  </div>
+                  <small class="field-hint">Type any font name, use the folder fonts, or load the current PC font list.</small>
+                </label>
+                <label class="field">
+                  <span>Digit weight</span>
+                  <select id="barcodeFontWeight" name="barcodeFontWeight">
+                    <option value="400" selected>Regular 400</option>
+                    <option value="500">Medium 500</option>
+                    <option value="600">SemiBold 600</option>
+                    <option value="700">Bold 700</option>
+                    <option value="800">ExtraBold 800</option>
+                  </select>
+                  <small class="field-hint">Useful when your font family has lighter or heavier digits.</small>
+                </label>
+              </div>
+
+              <div class="status-strip" id="barcodeStatusStrip" aria-live="polite">
+                Waiting for digits.
+              </div>
+
+              <div class="button-row">
+                <button class="primary-button barcode-button" type="submit">Generate EAN-13</button>
+                <button class="secondary-button" type="button" id="barcodeExampleButton">Use example</button>
+                <button class="ghost-button" type="button" id="barcodeResetButton">Reset</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="tool-panel active" id="qrPanel" aria-labelledby="qrModeButton">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">QR Generator</p>
+                <h2>Choose the QR type, fill it, then style it</h2>
+              </div>
+              <p class="section-note">
+                Keep the setup compact, then customize the final look in the same area.
+              </p>
+            </div>
+
+            <div class="qr-workbench">
+              <form id="qrForm" class="card form-card qr-form-card" novalidate>
+                <div class="qr-topbar">
+                  <div>
+                    <h3 id="qrFormTitle">QR setup</h3>
+                    <p id="qrFormDescription">Fill the fields for the selected QR type.</p>
+                  </div>
+                  <label class="field field-compact">
+                    <span>QR type</span>
+                    <select id="qrTypeSelect" name="qrTypeSelect"></select>
+                    <small class="field-hint">Switch templates here without scrolling through the full library.</small>
+                  </label>
+                </div>
+
+                <div id="qrQuickPicks" class="quick-pick-row" aria-label="Popular QR types"></div>
+
+                <div id="qrDynamicFields" class="field-grid field-grid-2 qr-dynamic-fields"></div>
+
+                <div class="status-strip" id="qrStatusStrip" aria-live="polite">
+                  Paste a value like `facebook.com/...` or `https://...` and the app will normalize it automatically.
+                </div>
+
+                <div class="button-row">
+                  <button class="primary-button qr-button" type="submit">Generate QR code</button>
+                  <button class="secondary-button" type="button" id="qrExampleButton">Use example</button>
+                  <button class="ghost-button" type="button" id="qrResetButton">Reset</button>
+                </div>
+              </form>
+
+              <section class="card qr-design-card" aria-labelledby="qrDesignTitle">
+                <div class="card-head">
+                  <div>
+                    <h3 id="qrDesignTitle">Customize design</h3>
+                    <p>Choose the module look, finder corners, frame, logo, and colors from one place.</p>
+                  </div>
+                </div>
+
+                <div class="design-section">
+                  <div class="design-section-head">
+                    <h4>Shapes</h4>
+                    <p>Change the look of the QR modules.</p>
+                  </div>
+                  <div id="qrShapeGrid" class="design-option-grid" role="list"></div>
+                </div>
+
+                <div class="design-section">
+                  <div class="design-section-head">
+                    <h4>Corners</h4>
+                    <p>Style the 3 finder eyes separately from the data modules.</p>
+                  </div>
+                  <div id="qrCornerGrid" class="design-option-grid" role="list"></div>
+                  <div class="field-grid field-grid-2">
+                    <label class="field">
+                      <span>Corner color</span>
+                      <select id="qrCornerColorMode" name="qrCornerColorMode">
+                        <option value="main">Use QR code color</option>
+                        <option value="custom">Use custom corner color</option>
+                      </select>
+                    </label>
+                    <label class="field">
+                      <span>Custom corner color</span>
+                      <input id="qrCornerColor" name="qrCornerColor" type="color" value="#14213d">
+                    </label>
+                  </div>
+                </div>
+
+                <div class="design-section">
+                  <div class="design-section-head">
+                    <h4>Frames</h4>
+                    <p>Optional scan labels around the QR code.</p>
+                  </div>
+                  <div id="qrFrameGrid" class="design-option-grid" role="list"></div>
+                </div>
+
+                <div class="design-section">
+                  <div class="design-section-head">
+                    <h4>Logos</h4>
+                    <p>Vector center marks that stay clean in SVG and PDF.</p>
+                  </div>
+                  <div id="qrLogoGrid" class="design-option-grid" role="list"></div>
+                </div>
+
+                <div class="design-section design-section-tight">
+                  <div class="design-section-head">
+                    <h4>Colors and output sizing</h4>
+                    <p>These settings affect output quality and the final look.</p>
+                  </div>
+                  <div class="field-grid field-grid-4">
+                    <label class="field">
+                      <span>Error correction</span>
+                      <select id="qrErrorCorrection" name="qrErrorCorrection">
+                        <option value="L">L - compact</option>
+                        <option value="M" selected>M - balanced</option>
+                        <option value="Q">Q - safer</option>
+                        <option value="H">H - highest</option>
+                      </select>
+                    </label>
+                    <label class="field">
+                      <span>Cell size</span>
+                      <input id="qrCellSize" name="qrCellSize" type="number" min="3" max="16" step="1" value="8">
+                    </label>
+                    <label class="field">
+                      <span>Margin</span>
+                      <input id="qrMargin" name="qrMargin" type="number" min="4" max="64" step="2" value="24">
+                    </label>
+                    <label class="field">
+                      <span>QR color</span>
+                      <input id="qrDarkColor" name="qrDarkColor" type="color" value="#14213d">
+                    </label>
+                    <label class="field">
+                      <span>Background color</span>
+                      <input id="qrBackgroundColor" name="qrBackgroundColor" type="color" value="#ffffff">
+                    </label>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <section class="card qr-library-card" aria-labelledby="qrLibraryTitle">
+              <div class="card-head">
+                <div>
+                  <h3 id="qrLibraryTitle">Full QR template library</h3>
+                  <p>All options from your reference screenshots are still here, just moved below the main input area.</p>
+                </div>
+              </div>
+              <div id="qrTypeGrid" class="qr-type-grid" role="list"></div>
+            </section>
+          </section>
+        </section>
+
+        <aside class="preview-panel">
+          <div class="card preview-card">
+            <div class="card-head">
+              <div>
+                <h3>Preview</h3>
+                <p id="previewTitle">Generated code will appear here.</p>
+              </div>
+              <span class="preview-badge" id="previewBadge">Ready</span>
+            </div>
+
+            <div id="previewCanvas" class="preview-canvas">
+              <div class="preview-placeholder">
+                <strong>Nothing generated yet</strong>
+                <p>Use one of the generators on the left to create a code.</p>
+              </div>
+            </div>
+
+            <div class="preview-actions">
+              <button class="secondary-button" type="button" id="downloadSvgButton" disabled>Download SVG (vector)</button>
+              <button class="secondary-button" type="button" id="downloadPdfButton" disabled>Download PDF (vector)</button>
+              <button class="secondary-button" type="button" id="downloadPngButton" disabled>Download PNG (transparent)</button>
+              <button class="ghost-button" type="button" id="copyPayloadButton" disabled>Copy payload</button>
+            </div>
+          </div>
+
+          <div class="card detail-card">
+            <div class="card-head">
+              <h3>Encoded payload</h3>
+              <p>The exact content that gets encoded into the barcode or QR code.</p>
+            </div>
+            <pre id="payloadText" class="payload-box">No payload yet.</pre>
+          </div>
+
+          <div class="card detail-card">
+            <div class="card-head">
+              <h3>Generation summary</h3>
+              <p>Quick validation details for the current output.</p>
+            </div>
+            <dl id="summaryList" class="summary-list">
+              <div class="summary-row">
+                <dt>Status</dt>
+                <dd>Waiting for your first code</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div class="card detail-card">
+            <div class="card-head">
+              <h3>Built-in validation</h3>
+              <p>Runs a local scan test with sample outputs when your browser supports `BarcodeDetector`.</p>
+            </div>
+            <div class="quality-panel">
+              <button class="secondary-button" type="button" id="runSelfCheckButton">Run validation suite</button>
+              <div id="selfCheckStatus" class="self-check-status" aria-live="polite">
+                Validation has not been run yet.
+              </div>
+            </div>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <script src="./vendor/qrcode.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
+
