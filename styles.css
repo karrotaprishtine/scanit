@@ -450,6 +450,32 @@ button {
   gap: 18px;
 }
 
+.barcode-form-card {
+  padding: 18px;
+}
+
+.barcode-form-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.barcode-core-stack {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.barcode-tight-grid {
+  gap: 12px;
+}
+
+.barcode-action-row {
+  padding-top: 2px;
+  margin-bottom: 2px;
+}
+
 .field-grid {
   display: grid;
   gap: 16px;
@@ -469,7 +495,7 @@ button {
 
 .field {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .field-compact {
@@ -488,7 +514,7 @@ button {
 .field select,
 .field textarea {
   width: 100%;
-  padding: 13px 14px;
+  padding: 11px 13px;
   border: 1px solid rgba(18, 19, 24, 0.12);
   border-radius: var(--radius-md);
   background: #fcfbf8;
@@ -511,18 +537,19 @@ button {
 
 .field-hint {
   color: var(--muted);
-  line-height: 1.45;
+  line-height: 1.35;
+  font-size: 0.84rem;
 }
 
 .font-loader-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
 }
 
 .font-loader-button {
-  padding: 10px 14px;
+  padding: 9px 13px;
   font-weight: 600;
 }
 
@@ -536,6 +563,325 @@ button {
 
 .font-loader-status.warn {
   color: #b06a2a;
+}
+
+.barcode-settings-top {
+  gap: 12px;
+  align-items: start;
+}
+
+.barcode-font-field {
+  gap: 6px;
+}
+
+.barcode-metrics-grid {
+  gap: 12px;
+}
+
+.barcode-art-block {
+  display: block;
+  padding: 0;
+  border-radius: calc(var(--radius-lg) + 2px);
+  border: 1px solid rgba(18, 19, 24, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.98));
+  align-self: start;
+  overflow: hidden;
+}
+
+.barcode-art-block.disabled {
+  opacity: 0.82;
+}
+
+.barcode-art-block.disabled .shape-browser,
+.barcode-art-block.disabled .barcode-art-upload,
+.barcode-art-block.disabled .barcode-art-metric {
+  filter: saturate(0.78);
+}
+
+.barcode-art-head,
+.subsection-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+}
+
+.barcode-art-head h3,
+.barcode-art-summary-copy h3 {
+  margin: 0;
+  font-family: "Trebuchet MS", "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  font-size: 1.05rem;
+}
+
+.barcode-art-details {
+  display: block;
+}
+
+.barcode-art-summary {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.barcode-art-summary::-webkit-details-marker {
+  display: none;
+}
+
+.barcode-art-summary::marker {
+  display: none;
+}
+
+.barcode-art-summary::after {
+  content: "+";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(18, 19, 24, 0.1);
+  background: rgba(255, 255, 255, 0.74);
+  color: var(--text);
+  font-size: 1.1rem;
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.barcode-art-details[open] .barcode-art-summary::after {
+  content: "-";
+}
+
+.barcode-art-summary-copy p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.barcode-art-details-body {
+  display: grid;
+  gap: 14px;
+  padding: 0 16px 16px;
+}
+
+.barcode-art-mode-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.barcode-art-mode-button,
+.shape-chip {
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(18, 19, 24, 0.1);
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--text);
+  font-weight: 700;
+  transition: transform 140ms ease, border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+}
+
+.barcode-art-mode-button:hover,
+.shape-chip:hover,
+.shape-card:hover {
+  transform: translateY(-1px);
+}
+
+.barcode-art-mode-button.active,
+.shape-chip.active {
+  color: #ffffff;
+  border-color: #171a24;
+  background: #171a24;
+  box-shadow: 0 12px 24px rgba(18, 19, 24, 0.12);
+}
+
+.barcode-art-settings {
+  align-items: start;
+}
+
+.barcode-art-metric {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-height: 100%;
+  padding: 15px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(18, 19, 24, 0.08);
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.barcode-art-metric-label,
+.shape-browser-summary-label {
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7a6758;
+}
+
+.barcode-art-metric strong {
+  font-size: 1.7rem;
+  line-height: 1;
+  font-family: "Trebuchet MS", "Segoe UI Variable Display", "Segoe UI", sans-serif;
+}
+
+.barcode-art-library,
+.barcode-art-upload {
+  display: none;
+}
+
+.barcode-art-block[data-art-mode="library"] .barcode-art-library,
+.barcode-art-block[data-art-mode="upload"] .barcode-art-upload {
+  display: grid;
+}
+
+.shape-browser {
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(18, 19, 24, 0.08);
+  background: rgba(255, 255, 255, 0.82);
+  overflow: hidden;
+}
+
+.shape-browser > summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  padding: 16px 18px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.shape-browser > summary::-webkit-details-marker {
+  display: none;
+}
+
+.shape-browser[open] > summary {
+  border-bottom: 1px solid rgba(18, 19, 24, 0.08);
+}
+
+.shape-browser-summary-copy {
+  display: grid;
+  gap: 5px;
+}
+
+.shape-browser-summary-copy strong {
+  font-size: 1rem;
+  font-family: "Trebuchet MS", "Segoe UI Variable Display", "Segoe UI", sans-serif;
+}
+
+.shape-browser-summary-copy small {
+  color: var(--muted);
+}
+
+.shape-browser-summary-preview {
+  display: grid;
+  place-items: center;
+  width: 118px;
+  min-width: 118px;
+  min-height: 90px;
+  padding: 8px;
+  border-radius: calc(var(--radius-md) + 2px);
+  border: 1px solid rgba(18, 19, 24, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(243, 239, 232, 0.92));
+}
+
+.shape-browser-panel {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.shape-browser-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: end;
+}
+
+.shape-browser-count {
+  align-self: center;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(20, 33, 61, 0.06);
+  color: #305053;
+  font-weight: 700;
+}
+
+.shape-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.shape-browser-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 12px;
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.shape-card {
+  display: grid;
+  gap: 11px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(18, 19, 24, 0.08);
+  background: rgba(255, 255, 255, 0.95);
+  text-align: left;
+  transition: transform 140ms ease, border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
+}
+
+.shape-card.active {
+  border-color: rgba(20, 33, 61, 0.24);
+  box-shadow: 0 12px 26px rgba(20, 33, 61, 0.08);
+  background: #ffffff;
+}
+
+.shape-card-preview {
+  display: grid;
+  place-items: center;
+  min-height: 108px;
+  padding: 8px;
+  border-radius: calc(var(--radius-md) - 2px);
+  background:
+    radial-gradient(circle at top right, rgba(66, 112, 255, 0.08), transparent 32%),
+    linear-gradient(180deg, rgba(248, 246, 242, 0.96), rgba(240, 234, 227, 0.88));
+}
+
+.shape-card-label {
+  font-size: 0.92rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.shape-card-note {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.shape-card-empty {
+  grid-column: 1 / -1;
+  padding: 18px;
+  border-radius: var(--radius-md);
+  border: 1px dashed rgba(18, 19, 24, 0.14);
+  color: var(--muted);
+  text-align: center;
+}
+
+.barcode-shape-preview {
+  width: 100%;
+  height: auto;
+  max-width: 112px;
 }
 
 .status-strip {
@@ -762,6 +1108,10 @@ button {
   gap: 12px;
 }
 
+#qrFrameTextFields {
+  margin-top: 12px;
+}
+
 .design-section-head h4 {
   margin: 0;
   font-family: "Trebuchet MS", "Segoe UI Variable Display", "Segoe UI", sans-serif;
@@ -793,6 +1143,11 @@ button {
   transition: transform 140ms ease, border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
 }
 
+.design-option-frame,
+.design-option-logo {
+  min-height: 132px;
+}
+
 .design-option.active {
   border-color: rgba(34, 69, 208, 0.24);
   background: linear-gradient(135deg, rgba(232, 239, 255, 0.84), rgba(255, 255, 255, 1));
@@ -816,8 +1171,17 @@ button {
   height: 74px;
 }
 
+.design-option-logo .design-preview {
+  width: 86px;
+  height: 86px;
+}
+
 .design-preview text {
   font-family: Arial, Helvetica, sans-serif;
+}
+
+#qrLogoTextFields {
+  margin-top: 12px;
 }
 
 .qr-type-grid {
@@ -1079,7 +1443,11 @@ body[data-theme="dark"] .qr-type-card,
 body[data-theme="dark"] .secondary-button,
 body[data-theme="dark"] .ghost-button,
 body[data-theme="dark"] .hero-cycle-button,
-body[data-theme="dark"] .hero-art-card {
+body[data-theme="dark"] .shape-card,
+body[data-theme="dark"] .shape-browser,
+body[data-theme="dark"] .barcode-art-metric,
+body[data-theme="dark"] .hero-art-card,
+body[data-theme="dark"] .font-chip {
   border-color: rgba(255, 255, 255, 0.08);
   background: rgba(21, 26, 36, 0.88);
   box-shadow: none;
@@ -1088,7 +1456,8 @@ body[data-theme="dark"] .hero-art-card {
 body[data-theme="dark"] .quick-pick-pill,
 body[data-theme="dark"] .design-option,
 body[data-theme="dark"] .qr-type-card,
-body[data-theme="dark"] .design-option-label {
+body[data-theme="dark"] .design-option-label,
+body[data-theme="dark"] .font-chip {
   color: #e8eefc;
 }
 
@@ -1096,9 +1465,74 @@ body[data-theme="dark"] .hero-art-chip,
 body[data-theme="dark"] .quick-pick-pill-code,
 body[data-theme="dark"] .mode-icon,
 body[data-theme="dark"] .preview-badge,
+body[data-theme="dark"] .shape-browser-count,
 body[data-theme="dark"] .surface-tag {
   background: rgba(255, 255, 255, 0.09);
   color: #f3f5fa;
+}
+
+body[data-theme="dark"] .barcode-art-block {
+  border-color: rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(circle at top right, rgba(82, 106, 191, 0.16), transparent 30%),
+    radial-gradient(circle at bottom left, rgba(183, 112, 76, 0.14), transparent 26%),
+    rgba(15, 20, 28, 0.92);
+}
+
+body[data-theme="dark"] .barcode-art-summary::after {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: #f3f5fa;
+}
+
+body[data-theme="dark"] .barcode-art-mode-button,
+body[data-theme="dark"] .shape-chip {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: #eaf0ff;
+}
+
+body[data-theme="dark"] .barcode-art-mode-button.active,
+body[data-theme="dark"] .shape-chip.active {
+  border-color: rgba(166, 184, 255, 0.22);
+  background: #eef3ff;
+  color: #111722;
+}
+
+body[data-theme="dark"] .barcode-art-metric-label,
+body[data-theme="dark"] .shape-browser-summary-label {
+  color: #b7bfd0;
+}
+
+body[data-theme="dark"] .shape-browser-summary-copy small,
+body[data-theme="dark"] .shape-card-note {
+  color: #a8b3ca;
+}
+
+body[data-theme="dark"] .shape-browser-summary-preview,
+body[data-theme="dark"] .shape-card-preview {
+  border-color: rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(circle at top right, rgba(112, 138, 255, 0.14), transparent 34%),
+    #101620;
+}
+
+body[data-theme="dark"] .shape-card.active {
+  border-color: rgba(166, 184, 255, 0.22);
+  background: rgba(24, 31, 43, 0.98);
+}
+
+body[data-theme="dark"] .shape-card-label,
+body[data-theme="dark"] .shape-browser-summary-copy strong,
+body[data-theme="dark"] .barcode-art-head h3,
+body[data-theme="dark"] .barcode-art-metric strong {
+  color: #f7f9ff;
+}
+
+body[data-theme="dark"] .shape-card-empty {
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #a8b3ca;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 body[data-theme="dark"] .hero-scan-mark span {
@@ -1191,7 +1625,16 @@ body[data-theme="dark"] .qr-type-card.active .qr-type-icon {
 
 body[data-theme="dark"] .design-option-note,
 body[data-theme="dark"] .qr-type-card p {
-  color: #9ba8c7;
+  color: #b8c5e2;
+}
+
+body[data-theme="dark"] .field-hint,
+body[data-theme="dark"] .card-head p,
+body[data-theme="dark"] .design-section-head p,
+body[data-theme="dark"] .shape-browser-summary-copy small,
+body[data-theme="dark"] .shape-card-note,
+body[data-theme="dark"] .barcodeFormatHint {
+  color: #b8c5e2;
 }
 
 body[data-theme="dark"] .qr-type-icon {
@@ -1251,6 +1694,12 @@ body[data-theme="dark"] .field span {
   color: #f5f7fc;
 }
 
+body[data-theme="dark"] .font-chip.active {
+  border-color: rgba(166, 184, 255, 0.22);
+  background: #eef3ff;
+  color: #111722;
+}
+
 body[data-theme="dark"] .hero-art {
   background:
     radial-gradient(circle at 26% 40%, rgba(197, 157, 84, 0.18), transparent 24%),
@@ -1278,7 +1727,8 @@ body[data-theme="dark"] .hero-grid-mark {
 
 @media (max-width: 980px) {
   .hero-content,
-  .qr-workbench {
+  .qr-workbench,
+  .barcode-form-layout {
     grid-template-columns: 1fr;
   }
 
@@ -1287,6 +1737,10 @@ body[data-theme="dark"] .hero-grid-mark {
   }
 
   .field-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .shape-browser-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -1305,6 +1759,7 @@ body[data-theme="dark"] .hero-grid-mark {
 
   .hero-content,
   .qr-workbench,
+  .barcode-form-layout,
   .field-grid-2,
   .field-grid-3,
   .field-grid-4,
@@ -1337,11 +1792,27 @@ body[data-theme="dark"] .hero-grid-mark {
   .section-head,
   .card-head,
   .qr-topbar,
+  .barcode-art-head,
+  .shape-browser-toolbar,
   .summary-row {
     display: grid;
   }
 
   .summary-row dd {
     text-align: left;
+  }
+
+  .shape-browser > summary {
+    padding: 14px 16px;
+  }
+
+  .shape-browser-summary-preview {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .shape-browser-grid {
+    grid-template-columns: 1fr;
+    max-height: none;
   }
 }

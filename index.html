@@ -80,7 +80,7 @@
           <span class="mode-icon" aria-hidden="true">EAN</span>
           <span>
             <strong>Barcode</strong>
-            <small>Clear EAN-13 workspace</small>
+            <small>EAN, UPC, linear, and postal formats</small>
           </span>
         </button>
       </nav>
@@ -91,122 +91,151 @@
             <div class="section-head">
               <div>
                 <p class="section-kicker">Barcode Generator</p>
-                <h2>EAN-13 with automatic check-digit handling</h2>
+                <h2 id="barcodeSectionTitle">EAN-13 and ready-for-work barcode formats</h2>
               </div>
-              <p class="section-note">
-                Use 12 digits to auto-complete, or 13 digits to validate.
-              </p>
+              <p class="section-note" id="barcodeSectionNote">Start on EAN-13, then switch to other reliable retail, linear, and postal formats when you need them.</p>
             </div>
 
-            <form id="barcodeForm" class="card form-card" novalidate>
-              <div class="field-grid field-grid-2">
-                <label class="field">
-                  <span>EAN-13 digits</span>
-                  <input
-                    id="barcodeDigits"
-                    name="barcodeDigits"
-                    inputmode="numeric"
-                    maxlength="13"
-                    autocomplete="off"
-                    placeholder="3812345678908"
-                    required
-                  >
-                  <small class="field-hint">Digits only. Spaces and hyphens are removed automatically.</small>
-                </label>
-                <label class="field">
-                  <span>File name label</span>
-                  <input
-                    id="barcodeLabel"
-                    name="barcodeLabel"
-                    maxlength="60"
-                    autocomplete="off"
-                    placeholder="barcode-item"
-                  >
-                  <small class="field-hint">Optional. Used for the downloaded file name.</small>
-                </label>
-              </div>
+            <form id="barcodeForm" class="card form-card barcode-form-card" novalidate>
+              <div class="barcode-form-layout">
+                <div class="barcode-core-stack">
+                  <label class="field">
+                    <span>Barcode type</span>
+                    <select id="barcodeFormat" name="barcodeFormat"></select>
+                    <small class="field-hint" id="barcodeFormatHint">EAN-13 stays the default every time the app opens.</small>
+                  </label>
 
-              <div class="field-grid field-grid-3">
-                <label class="field">
-                  <span>Module width</span>
-                  <input id="barcodeModuleWidth" name="barcodeModuleWidth" type="number" min="1" max="10" step="0.5" value="3">
-                  <small class="field-hint">Wider bars for bigger print output.</small>
-                </label>
-                <label class="field">
-                  <span>Bar height</span>
-                  <input id="barcodeHeight" name="barcodeHeight" type="number" min="60" max="280" step="5" value="132">
-                  <small class="field-hint">Excludes the human-readable digits underneath.</small>
-                </label>
-                <label class="field">
-                  <span>Quiet zone</span>
-                  <input id="barcodeQuietZone" name="barcodeQuietZone" type="number" min="8" max="32" step="1" value="11">
-                  <small class="field-hint">Margin in modules at the left and right side.</small>
-                </label>
-              </div>
-
-              <div class="field-grid field-grid-3">
-                <label class="field">
-                  <span>Digit size</span>
-                  <input id="barcodeTextSize" name="barcodeTextSize" type="number" min="14" max="56" step="1" value="28">
-                  <small class="field-hint">Controls the size of the numbers under the barcode.</small>
-                </label>
-                <label class="field">
-                  <span>Digit font family</span>
-                  <input
-                    id="barcodeFontFamily"
-                    name="barcodeFontFamily"
-                    list="barcodeFontFamilyList"
-                    maxlength="120"
-                    autocomplete="off"
-                    placeholder="Arial"
-                  >
-                  <datalist id="barcodeFontFamilyList">
-                    <option value="OCR B Std"></option>
-                    <option value="OCR-B"></option>
-                    <option value="Arial"></option>
-                    <option value="Helvetica"></option>
-                    <option value="Trebuchet MS"></option>
-                    <option value="Tahoma"></option>
-                    <option value="Verdana"></option>
-                    <option value="Segoe UI"></option>
-                    <option value="Calibri"></option>
-                    <option value="Cambria"></option>
-                    <option value="Georgia"></option>
-                    <option value="Times New Roman"></option>
-                    <option value="Courier New"></option>
-                    <option value="Consolas"></option>
-                    <option value="Franklin Gothic Medium"></option>
-                    <option value="Palatino Linotype"></option>
-                    <option value="Century Gothic"></option>
-                    <option value="Lucida Sans Unicode"></option>
-                  </datalist>
-                  <div class="font-loader-row">
-                    <button class="ghost-button font-loader-button" id="loadInstalledFontsButton" type="button">Load this PC fonts</button>
-                    <small class="field-hint font-loader-status" id="barcodeFontAccessStatus">Fonts from the web folder load automatically. This button adds the fonts installed on this PC too.</small>
+                  <div class="field-grid field-grid-2">
+                    <label class="field">
+                      <span id="barcodeValueLabel">EAN-13 digits</span>
+                      <input
+                        id="barcodeDigits"
+                        name="barcodeDigits"
+                        inputmode="numeric"
+                        autocapitalize="characters"
+                        autocomplete="off"
+                        placeholder="3812345678908"
+                        required
+                      >
+                      <small class="field-hint" id="barcodeValueHint">Digits only. Spaces and hyphens are removed automatically.</small>
+                    </label>
+                    <label class="field">
+                      <span>File name label</span>
+                      <input
+                        id="barcodeLabel"
+                        name="barcodeLabel"
+                        maxlength="60"
+                        autocomplete="off"
+                        placeholder="barcode-item"
+                      >
+                      <small class="field-hint">Optional. Used for the downloaded file name.</small>
+                    </label>
                   </div>
-                  <small class="field-hint">Type any font name, use the folder fonts, or load the current PC font list.</small>
-                </label>
-                <label class="field">
-                  <span>Digit weight</span>
-                  <select id="barcodeFontWeight" name="barcodeFontWeight">
-                    <option value="400" selected>Regular 400</option>
-                    <option value="500">Medium 500</option>
-                    <option value="600">SemiBold 600</option>
-                    <option value="700">Bold 700</option>
-                    <option value="800">ExtraBold 800</option>
-                  </select>
-                  <small class="field-hint">Useful when your font family has lighter or heavier digits.</small>
-                </label>
-              </div>
 
-              <div class="status-strip" id="barcodeStatusStrip" aria-live="polite">
-                Waiting for digits.
-              </div>
+                  <div class="status-strip" id="barcodeStatusStrip" aria-live="polite">
+                    Waiting for digits.
+                  </div>
 
-              <div class="button-row">
-                <button class="primary-button barcode-button" type="submit">Generate EAN-13</button>
-                <button class="secondary-button" type="button" id="barcodeExampleButton">Use example</button>
-                <button class="ghost-button" type="button" id="barcodeResetButton">Reset</button>
+                  <div class="button-row barcode-action-row">
+                    <button class="primary-button barcode-button" type="submit" id="barcodeSubmitButton">Generate EAN 13</button>
+                    <button class="secondary-button" type="button" id="barcodeExampleButton">Use example</button>
+                    <button class="ghost-button" type="button" id="barcodeResetButton">Reset</button>
+                  </div>
+
+                  <div class="field-grid field-grid-3 barcode-settings-top">
+                    <label class="field field-span-2 barcode-font-field">
+                      <span>Digit font family</span>
+                      <select id="barcodeFontFamily" name="barcodeFontFamily"></select>
+                      <div class="font-loader-row">
+                        <button class="ghost-button font-loader-button" id="loadInstalledFontsButton" type="button">Load installed fonts</button>
+                        <small class="field-hint font-loader-status" id="barcodeFontAccessStatus">Click to load the fonts installed on this PC.</small>
+                      </div>
+                      <small class="field-hint">Choose from the built-in list or load the font families installed on this PC.</small>
+                    </label>
+                    <label class="field">
+                      <span>Digit weight</span>
+                      <select id="barcodeFontWeight" name="barcodeFontWeight">
+                        <option value="400" selected>Regular 400</option>
+                        <option value="500">Medium 500</option>
+                        <option value="600">SemiBold 600</option>
+                        <option value="700">Bold 700</option>
+                        <option value="800">ExtraBold 800</option>
+                      </select>
+                      <small class="field-hint">Use the heavier cut when the font supports it.</small>
+                    </label>
+                  </div>
+
+                  <div class="field-grid field-grid-4 barcode-tight-grid barcode-metrics-grid">
+                    <label class="field">
+                      <span>Digit size</span>
+                      <input id="barcodeTextSize" name="barcodeTextSize" type="number" min="14" max="56" step="1" value="28">
+                      <small class="field-hint">Numbers under the barcode.</small>
+                    </label>
+                    <label class="field">
+                      <span>Module width</span>
+                      <input id="barcodeModuleWidth" name="barcodeModuleWidth" type="number" min="1" max="10" step="0.5" value="3">
+                      <small class="field-hint">Wider bars for bigger print.</small>
+                    </label>
+                    <label class="field">
+                      <span>Bar height</span>
+                      <input id="barcodeHeight" name="barcodeHeight" type="number" min="60" max="280" step="5" value="132">
+                      <small class="field-hint">Barcode body height.</small>
+                    </label>
+                    <label class="field">
+                      <span>Quiet zone</span>
+                      <input id="barcodeQuietZone" name="barcodeQuietZone" type="number" min="8" max="32" step="1" value="11">
+                      <small class="field-hint">Left and right safety margin.</small>
+                    </label>
+                  </div>
+
+                  <section class="barcode-art-block" id="barcodeArtBlock" aria-labelledby="barcodeArtTitle">
+                    <details class="barcode-art-details" id="barcodeArtDetails">
+                      <summary class="barcode-art-summary">
+                        <div class="barcode-art-summary-copy">
+                          <h3 id="barcodeArtTitle">Custom SVG barcode art</h3>
+                          <p>Open this only when you want a product-specific SVG shape.</p>
+                        </div>
+                        <span class="surface-tag">Optional</span>
+                      </summary>
+
+                      <div class="barcode-art-details-body">
+                        <div class="barcode-art-mode-row" id="barcodeArtModeRow" role="tablist" aria-label="Barcode art source">
+                          <button class="barcode-art-mode-button active" type="button" data-barcode-art-mode="none">Clean</button>
+                          <button class="barcode-art-mode-button" type="button" data-barcode-art-mode="upload">SVG art</button>
+                        </div>
+
+                        <div class="field-grid field-grid-2 barcode-art-settings">
+                          <label class="field">
+                            <span>Art height</span>
+                            <input id="barcodeShapeHeight" name="barcodeShapeHeight" type="number" min="18" max="46" step="1" value="36">
+                            <small class="field-hint">Keeps the decorative band on top while the lower scan lane stays readable.</small>
+                          </label>
+                          <div class="barcode-art-metric">
+                            <span class="barcode-art-metric-label">Protected scan lane</span>
+                            <strong id="barcodeProtectedLaneOutput">64%</strong>
+                            <small class="field-hint">The lower section stays standard for scanning.</small>
+                          </div>
+                        </div>
+
+                        <div class="status-strip" id="barcodeArtStatus" aria-live="polite">
+                          Clean barcode mode is active. Switch to SVG art only when you want your own uploaded shape.
+                        </div>
+
+                        <div class="barcode-art-upload" id="barcodeArtUploadPanel">
+                          <label class="field">
+                            <span>Upload SVG silhouette</span>
+                            <input id="barcodeShapeUpload" name="barcodeShapeUpload" type="file" accept=".svg,image/svg+xml">
+                            <small class="field-hint">Use a filled silhouette or icon. The app samples the outline and turns it into barcode bars for export.</small>
+                          </label>
+                          <div class="font-loader-row">
+                            <button class="ghost-button font-loader-button" id="clearBarcodeShapeUploadButton" type="button">Clear SVG</button>
+                            <small class="field-hint font-loader-status" id="barcodeShapeUploadStatus">No SVG uploaded yet.</small>
+                          </div>
+                        </div>
+                      </div>
+                    </details>
+                  </section>
+                </div>
               </div>
             </form>
           </section>
@@ -294,6 +323,7 @@
                     <p>Optional scan labels around the QR code.</p>
                   </div>
                   <div id="qrFrameGrid" class="design-option-grid" role="list"></div>
+                  <div id="qrFrameTextFields" class="field-grid field-grid-2"></div>
                 </div>
 
                 <div class="design-section">
@@ -302,6 +332,7 @@
                     <p>Vector center marks that stay clean in SVG and PDF.</p>
                   </div>
                   <div id="qrLogoGrid" class="design-option-grid" role="list"></div>
+                  <div id="qrLogoTextFields" class="field-grid"></div>
                 </div>
 
                 <div class="design-section design-section-tight">
@@ -370,9 +401,9 @@
             </div>
 
             <div class="preview-actions">
-              <button class="secondary-button" type="button" id="downloadSvgButton" disabled>Download SVG (vector)</button>
-              <button class="secondary-button" type="button" id="downloadPdfButton" disabled>Download PDF (vector)</button>
-              <button class="secondary-button" type="button" id="downloadPngButton" disabled>Download PNG (transparent)</button>
+              <button class="secondary-button" type="button" id="downloadSvgButton" disabled>Download SVG</button>
+              <button class="secondary-button" type="button" id="downloadPdfButton" disabled>Download PDF</button>
+              <button class="secondary-button" type="button" id="downloadPngButton" disabled>Download PNG</button>
               <button class="ghost-button" type="button" id="copyPayloadButton" disabled>Copy payload</button>
             </div>
           </div>
@@ -388,7 +419,7 @@
           <div class="card detail-card">
             <div class="card-head">
               <h3>Generation summary</h3>
-              <p>Quick validation details for the current output.</p>
+              <p>Quick format details for the current output.</p>
             </div>
             <dl id="summaryList" class="summary-list">
               <div class="summary-row">
@@ -398,18 +429,6 @@
             </dl>
           </div>
 
-          <div class="card detail-card">
-            <div class="card-head">
-              <h3>Built-in validation</h3>
-              <p>Runs a local scan test with sample outputs when your browser supports `BarcodeDetector`.</p>
-            </div>
-            <div class="quality-panel">
-              <button class="secondary-button" type="button" id="runSelfCheckButton">Run validation suite</button>
-              <div id="selfCheckStatus" class="self-check-status" aria-live="polite">
-                Validation has not been run yet.
-              </div>
-            </div>
-          </div>
         </aside>
       </main>
     </div>

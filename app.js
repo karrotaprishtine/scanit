@@ -82,13 +82,20 @@
       short: "VC",
       description: "Share contact details.",
       fields: [
-        { key: "firstName", label: "First name", type: "text", required: true, defaultValue: "Anna" },
-        { key: "lastName", label: "Last name", type: "text", required: true, defaultValue: "Kovacs" },
-        { key: "mobile", label: "Mobile number", type: "tel", defaultValue: "+36123456789" },
-        { key: "email", label: "Email", type: "email", defaultValue: "anna@example.com" },
-        { key: "company", label: "Company", type: "text", defaultValue: "Northline Trade" },
-        { key: "title", label: "Job title", type: "text", defaultValue: "Sales Director" },
-        { key: "website", label: "Website", type: "url", defaultValue: "https://example.com" },
+        { key: "firstName", label: "First name", type: "text", required: true, defaultValue: "Anna", placeholder: "First name" },
+        { key: "lastName", label: "Last name", type: "text", required: true, defaultValue: "Kovacs", placeholder: "Last name" },
+        { key: "mobile", label: "Mobile number", type: "tel", defaultValue: "+36123456789", placeholder: "Mobile number", span: 2 },
+        { key: "phone", label: "Phone", type: "tel", defaultValue: "+3615550022", placeholder: "Phone" },
+        { key: "fax", label: "Fax", type: "tel", defaultValue: "+3615550099", placeholder: "Fax" },
+        { key: "email", label: "Email", type: "email", defaultValue: "anna@example.com", placeholder: "your@email.com", span: 2 },
+        { key: "company", label: "Company", type: "text", defaultValue: "Northline Trade", placeholder: "Company" },
+        { key: "title", label: "Job title", type: "text", defaultValue: "Sales Director", placeholder: "Your job" },
+        { key: "address", label: "Street", type: "text", defaultValue: "12 River Park Road", placeholder: "Street", span: 2 },
+        { key: "city", label: "City", type: "text", defaultValue: "Budapest", placeholder: "City" },
+        { key: "zip", label: "ZIP", type: "text", defaultValue: "1054", placeholder: "ZIP" },
+        { key: "state", label: "State", type: "text", defaultValue: "Budapest", placeholder: "State", span: 2 },
+        { key: "country", label: "Country", type: "text", defaultValue: "Hungary", placeholder: "Country", span: 2 },
+        { key: "website", label: "Website", type: "url", defaultValue: "https://example.com", placeholder: "www.your-website.com", span: 2 },
       ],
       build(values) {
         return buildVCard(values, false);
@@ -151,7 +158,14 @@
       short: "WIFI",
       description: "Connect a device to a WiFi network.",
       fields: [
-        { key: "ssid", label: "Network name (SSID)", type: "text", required: true, defaultValue: "OfficeNet-5G" },
+        {
+          key: "ssid",
+          label: "Network name (SSID)",
+          type: "text",
+          required: true,
+          defaultValue: "OfficeNet-5G",
+          hint: "This becomes the S field in the WiFi QR payload.",
+        },
         {
           key: "security",
           label: "Security type",
@@ -159,14 +173,58 @@
           required: true,
           defaultValue: "WPA",
           options: [
-            { value: "WPA", label: "WPA / WPA2 / WPA3" },
+            { value: "WPA", label: "WPA / WPA2 / WPA3 Personal" },
             { value: "WEP", label: "WEP" },
+            { value: "WPA2-EAP", label: "WPA2-EAP / Enterprise" },
             { value: "nopass", label: "No password" },
           ],
         },
-        { key: "password", label: "Password", type: "text", defaultValue: "VerySecurePass123" },
-        { key: "hidden", label: "Hidden network", type: "checkbox", defaultValue: false },
+        {
+          key: "password",
+          label: "Password",
+          type: "text",
+          defaultValue: "VerySecurePass123",
+          hint: "Ignored for open networks. Kept as the P field for WPA or WEP.",
+        },
+        {
+          key: "hidden",
+          label: "Hidden network",
+          type: "checkbox",
+          defaultValue: false,
+          hint: "Adds H:true for hidden SSIDs.",
+        },
+        {
+          key: "eap",
+          label: "EAP method",
+          type: "text",
+          defaultValue: "TTLS",
+          hint: "Only used for WPA2-EAP enterprise WiFi.",
+        },
+        {
+          key: "identity",
+          label: "Identity / username",
+          type: "text",
+          defaultValue: "warehouse.user",
+          hint: "Only used for WPA2-EAP enterprise WiFi.",
+        },
+        {
+          key: "anonymousIdentity",
+          label: "Anonymous identity",
+          type: "text",
+          defaultValue: "",
+          hint: "Optional A field for WPA2-EAP enterprise WiFi.",
+        },
+        {
+          key: "phase2",
+          label: "Phase 2 method",
+          type: "text",
+          defaultValue: "MSCHAPV2",
+          hint: "Optional PH2 field for WPA2-EAP enterprise WiFi.",
+        },
       ],
+      validate(values) {
+        return validateWifi(values);
+      },
       build(values) {
         return buildWifi(values);
       },
@@ -459,7 +517,169 @@
     "Century Gothic",
     "Lucida Sans Unicode",
   ];
-  const WEB_FONT_MANIFEST_PATH = "./fonts/manifest.json";
+  const BARCODE_PROTECTED_RATIO = 0.64;
+  const DEFAULT_BARCODE_ART_SHAPE_ID = "rooted-tree";
+  const BARCODE_ART_PREVIEW_BITS = "101011001011010110010110100101";
+  const BARCODE_ART_CATEGORY_LABELS = {
+    nature: "Nature",
+    sea: "Sea & Fish",
+    city: "City & Story",
+    product: "Food & Product",
+    playful: "Playful",
+  };
+  const BARCODE_ART_SHAPES = [
+    createBarcodeArtShape("rooted-tree", "Rooted Tree", "nature", "Branches above, root-like bars below.", ["tree", "roots", "organic", "eco"], buildRootedTreeProfile, decorateRootedTree),
+    createBarcodeArtShape("forest-hills", "Forest Hills", "nature", "Rolling hills with a small treeline story.", ["forest", "hill", "landscape", "trees"], buildForestHillsProfile, decorateForestHills),
+    createBarcodeArtShape("umbrella-rain", "Umbrella Rain", "nature", "A clean dome with rain and a curved handle.", ["umbrella", "rain", "weather"], buildUmbrellaRainProfile, decorateUmbrellaRain),
+    createBarcodeArtShape("mountain-cabin", "Mountain Cabin", "nature", "Peaks with a tiny cabin tucked into the barcode.", ["mountain", "cabin", "outdoor"], buildMountainCabinProfile, decorateMountainCabin),
+    createBarcodeArtShape("meadow-arch", "Meadow Arch", "nature", "Soft arch bars with floral line-work above.", ["meadow", "floral", "garden"], buildMeadowArchProfile, decorateMeadowArch),
+    createBarcodeArtShape("tuna-fish", "Tuna Fish", "sea", "Fish body formed by the bars with fin accents.", ["fish", "tuna", "seafood", "ocean"], buildTunaFishProfile, decorateTunaFish),
+    createBarcodeArtShape("whale-splash", "Whale Splash", "sea", "A whale curve with a soft splash on top.", ["whale", "splash", "marine"], buildWhaleSplashProfile, decorateWhaleSplash),
+    createBarcodeArtShape("fisherman-lake", "Fisherman Lake", "sea", "Wave-shaped bars with a boat and fishing line.", ["fishing", "boat", "lake", "waves"], buildFishermanLakeProfile, decorateFishermanLake),
+    createBarcodeArtShape("ocean-swell", "Ocean Swell", "sea", "Sea birds and fish over tall rolling bars.", ["ocean", "swell", "birds", "fish"], buildOceanSwellProfile, decorateOceanSwell),
+    createBarcodeArtShape("harbor-birds", "Harbor Birds", "sea", "A calmer horizon with gulls and water marks.", ["harbor", "gulls", "coast"], buildHarborBirdsProfile, decorateHarborBirds),
+    createBarcodeArtShape("castle-skyline", "Castle Skyline", "city", "Tall storybook towers above the bars.", ["castle", "skyline", "towers"], buildCastleSkylineProfile, decorateCastleSkyline),
+    createBarcodeArtShape("clock-tower", "Clock Tower", "city", "A centered tower silhouette with small wings.", ["clock", "tower", "city"], buildClockTowerProfile, decorateClockTower),
+    createBarcodeArtShape("roofline-home", "Roofline Home", "city", "Simple rooftops and a warm neighborhood feel.", ["roof", "home", "house"], buildRooflineHomeProfile, decorateRooflineHome),
+    createBarcodeArtShape("cathedral-peak", "Cathedral Peak", "city", "Sharp central peaks for more dramatic packaging.", ["cathedral", "spires", "gothic"], buildCathedralPeakProfile, decorateCathedralPeak),
+    createBarcodeArtShape("bridge-rail", "Bridge Rail", "city", "Bold crossbars for a graphic bridge look.", ["bridge", "rail", "graphic"], buildBridgeRailProfile, decorateBridgeRail),
+    createBarcodeArtShape("pizza-slice", "Pizza Slice", "product", "A pizza wedge and crust over retail bars.", ["pizza", "food", "slice"], buildPizzaSliceProfile, decoratePizzaSlice),
+    createBarcodeArtShape("coffee-steam", "Coffee Steam", "product", "Cup silhouette with soft steam lines.", ["coffee", "cup", "steam"], buildCoffeeSteamProfile, decorateCoffeeSteam),
+    createBarcodeArtShape("bottle-neck", "Bottle Neck", "product", "Bottle shoulders and cap in a clean package shape.", ["bottle", "beverage", "drink"], buildBottleNeckProfile, decorateBottleNeck),
+    createBarcodeArtShape("headphones-arch", "Headphones Arch", "playful", "Rounded arch with ear-cup accents.", ["headphones", "music", "audio"], buildHeadphonesArchProfile, decorateHeadphonesArch),
+    createBarcodeArtShape("clapperboard", "Clapperboard", "playful", "Film-slate top with a sharper barcode rhythm.", ["clapperboard", "film", "cinema"], buildClapperboardProfile, decorateClapperboard),
+  ];
+  const BARCODE_ART_CATEGORIES = [
+    { id: "all", label: "All" },
+    ...Object.entries(BARCODE_ART_CATEGORY_LABELS).map(([id, label]) => ({ id, label })),
+  ];
+  const barcodeArtShapeMap = Object.fromEntries(BARCODE_ART_SHAPES.map((shape) => [shape.id, shape]));
+  const BARCODE_GROUPS = [
+    { id: "ean-upc", label: "EAN / UPC" },
+    { id: "linear", label: "Linear codes" },
+    { id: "postal", label: "Postal codes" },
+  ];
+  const BARCODE_FORMATS = [
+    {
+      id: "ean13",
+      group: "ean-upc",
+      label: "EAN-13",
+      valueLabel: "EAN-13 digits",
+      placeholder: "3812345678908",
+      hint: "Use 12 digits to auto-complete, or 13 to validate.",
+      description: "Retail-ready EAN-13 with automatic check-digit handling.",
+      submitLabel: "Generate EAN 13",
+      exampleValue: "3812345678908",
+      inputMode: "numeric",
+      supportsArt: true,
+    },
+    {
+      id: "ean8",
+      group: "ean-upc",
+      label: "EAN-8",
+      valueLabel: "EAN-8 digits",
+      placeholder: "55123457",
+      hint: "Use 7 digits to auto-complete, or 8 to validate.",
+      description: "Compact retail code for smaller products.",
+      submitLabel: "Generate EAN 8",
+      exampleValue: "5512345",
+      inputMode: "numeric",
+      supportsArt: true,
+    },
+    {
+      id: "upca",
+      group: "ean-upc",
+      label: "UPC-A",
+      valueLabel: "UPC-A digits",
+      placeholder: "036000291452",
+      hint: "Use 11 digits to auto-complete, or 12 to validate.",
+      description: "North American retail barcode with outside guard digits.",
+      submitLabel: "Generate UPC A",
+      exampleValue: "03600029145",
+      inputMode: "numeric",
+      supportsArt: true,
+    },
+    {
+      id: "code128",
+      group: "linear",
+      label: "Code 128",
+      valueLabel: "Code 128 text",
+      placeholder: "ORD-2026-0042",
+      hint: "Supports upper/lowercase letters, numbers, spaces, and symbols.",
+      description: "Dense general-purpose barcode with automatic Code B and Code C switching.",
+      submitLabel: "Generate Code 128",
+      exampleValue: "ORD-2026-0042",
+      inputMode: "text",
+      supportsArt: true,
+    },
+    {
+      id: "code39",
+      group: "linear",
+      label: "Code 39",
+      valueLabel: "Code 39 text",
+      placeholder: "LOT-39-204",
+      hint: "Uppercase letters, digits, space, and - . $ / + % are supported.",
+      description: "Wide-reader-compatible alphanumeric barcode.",
+      submitLabel: "Generate Code 39",
+      exampleValue: "LOT-39-204",
+      inputMode: "text",
+      supportsArt: true,
+    },
+    {
+      id: "itf14",
+      group: "linear",
+      label: "ITF-14",
+      valueLabel: "ITF-14 digits",
+      placeholder: "15400141288767",
+      hint: "Use 13 digits to auto-complete, or 14 to validate.",
+      description: "Carton and shipping barcode with Interleaved 2 of 5 encoding.",
+      submitLabel: "Generate ITF 14",
+      exampleValue: "1540014128876",
+      inputMode: "numeric",
+      supportsArt: true,
+    },
+    {
+      id: "postnet5",
+      group: "postal",
+      label: "USPS POSTNET 5",
+      valueLabel: "ZIP code",
+      placeholder: "90210",
+      hint: "Exactly 5 digits. The check digit is added automatically.",
+      description: "USPS ZIP barcode for 5-digit postal routing.",
+      submitLabel: "Generate POSTNET 5",
+      exampleValue: "90210",
+      inputMode: "numeric",
+      supportsArt: false,
+    },
+    {
+      id: "postnet9",
+      group: "postal",
+      label: "USPS POSTNET 9",
+      valueLabel: "ZIP + 4",
+      placeholder: "205001234",
+      hint: "Exactly 9 digits. The check digit is added automatically.",
+      description: "USPS ZIP+4 barcode for extended routing.",
+      submitLabel: "Generate POSTNET 9",
+      exampleValue: "205001234",
+      inputMode: "numeric",
+      supportsArt: false,
+    },
+    {
+      id: "postnet11",
+      group: "postal",
+      label: "USPS POSTNET 11",
+      valueLabel: "Delivery point",
+      placeholder: "20500123411",
+      hint: "Exactly 11 digits. The check digit is added automatically.",
+      description: "USPS delivery-point barcode for mail routing detail.",
+      submitLabel: "Generate POSTNET 11",
+      exampleValue: "20500123411",
+      inputMode: "numeric",
+      supportsArt: false,
+    },
+  ];
+  const barcodeGroupMap = Object.fromEntries(BARCODE_GROUPS.map((group) => [group.id, group]));
+  const barcodeFormatMap = Object.fromEntries(BARCODE_FORMATS.map((format) => [format.id, format]));
   const QR_QUICK_PICKS = ["website", "vcard", "email", "sms", "wifi", "instagram"];
   const QR_SHAPE_OPTIONS = [
     { id: "square", label: "Square", note: "Classic" },
@@ -482,10 +702,10 @@
   ];
   const QR_LOGO_OPTIONS = [
     { id: "none", label: "None", note: "Maximum scan area" },
-    { id: "globe", label: "Globe", note: "Web" },
-    { id: "scan", label: "Scan", note: "Center mark" },
+    { id: "globe", label: "Globe", note: "Web mark" },
+    { id: "scan", label: "Scan", note: "Bigger callout" },
     { id: "focus", label: "Focus", note: "Target" },
-    { id: "type", label: "Type", note: "Template code" },
+    { id: "type", label: "Text", note: "Custom letters" },
   ];
   const QR_FINDER_ZONES = [
     { row: 0, column: 0 },
@@ -496,6 +716,60 @@
   const qrCornerOptionMap = mapOptionsById(QR_CORNER_OPTIONS);
   const qrFrameOptionMap = mapOptionsById(QR_FRAME_OPTIONS);
   const qrLogoOptionMap = mapOptionsById(QR_LOGO_OPTIONS);
+  const CODE39_CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. *$/+%";
+  const CODE39_PATTERNS = [
+    "111221211", "211211112", "112211112", "212211111", "111221112", "211221111", "112221111", "111211212",
+    "211211211", "112211211", "211112112", "112112112", "212112111", "111122112", "211122111", "112122111",
+    "111112212", "211112211", "112112211", "111122211", "211111122", "112111122", "212111121", "111121122",
+    "211121121", "112121121", "111111222", "211111221", "112111221", "111121221", "221111112", "122111112",
+    "222111111", "121121112", "221121111", "122121111", "121111212", "221111211", "122111211", "121121211",
+    "121212111", "121211121", "121112121", "111212121",
+  ];
+  const CODE39_PATTERN_MAP = Object.fromEntries(
+    CODE39_CHARACTERS.split("").map((character, index) => [character, CODE39_PATTERNS[index]]),
+  );
+  const ITF_PATTERNS = {
+    0: "00110",
+    1: "10001",
+    2: "01001",
+    3: "11000",
+    4: "00101",
+    5: "10100",
+    6: "01100",
+    7: "00011",
+    8: "10010",
+    9: "01010",
+  };
+  const POSTNET_PATTERNS = {
+    0: "11000",
+    1: "00011",
+    2: "00101",
+    3: "00110",
+    4: "01001",
+    5: "01010",
+    6: "01100",
+    7: "10001",
+    8: "10010",
+    9: "10100",
+  };
+  const CODE128_PATTERNS = [
+    "11011001100", "11001101100", "11001100110", "10010011000", "10010001100", "10001001100", "10011001000",
+    "10011000100", "10001100100", "11001001000", "11001000100", "11000100100", "10110011100", "10011011100",
+    "10011001110", "10111001100", "10011101100", "10011100110", "11001110010", "11001011100", "11001001110",
+    "11011100100", "11001110100", "11101101110", "11101001100", "11100101100", "11100100110", "11101100100",
+    "11100110100", "11100110010", "11011011000", "11011000110", "11000110110", "10100011000", "10001011000",
+    "10001000110", "10110001000", "10001101000", "10001100010", "11010001000", "11000101000", "11000100010",
+    "10110111000", "10110001110", "10001101110", "10111011000", "10111000110", "10001110110", "11101110110",
+    "11010001110", "11000101110", "11011101000", "11011100010", "11011101110", "11101011000", "11101000110",
+    "11100010110", "11101101000", "11101100010", "11100011010", "11101111010", "11001000010", "11110001010",
+    "10100110000", "10100001100", "10010110000", "10010000110", "10000101100", "10000100110", "10110010000",
+    "10110000100", "10011010000", "10011000010", "10000110100", "10000110010", "11000010010", "11001010000",
+    "11110111010", "11000010100", "10001111010", "10100111100", "10010111100", "10010011110", "10111100100",
+    "10011110100", "10011110010", "11110100100", "11110010100", "11110010010", "11011011110", "11011110110",
+    "11110110110", "10101111000", "10100011110", "10001011110", "10111101000", "10111100010", "11110101000",
+    "11110100010", "10111011110", "10111101110", "11101011110", "11110101110", "11010000100", "11010010000",
+    "11010011100", "1100011101011",
+  ];
   const HERO_MOODS = [
     {
       label: "Scan mood",
@@ -539,6 +813,12 @@
     qrModeButton: document.getElementById("qrModeButton"),
     barcodeForm: document.getElementById("barcodeForm"),
     qrForm: document.getElementById("qrForm"),
+    barcodeSectionTitle: document.getElementById("barcodeSectionTitle"),
+    barcodeSectionNote: document.getElementById("barcodeSectionNote"),
+    barcodeFormat: document.getElementById("barcodeFormat"),
+    barcodeFormatHint: document.getElementById("barcodeFormatHint"),
+    barcodeValueLabel: document.getElementById("barcodeValueLabel"),
+    barcodeValueHint: document.getElementById("barcodeValueHint"),
     barcodeDigits: document.getElementById("barcodeDigits"),
     barcodeLabel: document.getElementById("barcodeLabel"),
     barcodeModuleWidth: document.getElementById("barcodeModuleWidth"),
@@ -546,10 +826,19 @@
     barcodeQuietZone: document.getElementById("barcodeQuietZone"),
     barcodeTextSize: document.getElementById("barcodeTextSize"),
     barcodeFontFamily: document.getElementById("barcodeFontFamily"),
-    barcodeFontFamilyList: document.getElementById("barcodeFontFamilyList"),
     barcodeFontWeight: document.getElementById("barcodeFontWeight"),
+    barcodeSubmitButton: document.getElementById("barcodeSubmitButton"),
     loadInstalledFontsButton: document.getElementById("loadInstalledFontsButton"),
     barcodeFontAccessStatus: document.getElementById("barcodeFontAccessStatus"),
+    barcodeArtBlock: document.getElementById("barcodeArtBlock"),
+    barcodeArtDetails: document.getElementById("barcodeArtDetails"),
+    barcodeArtModeRow: document.getElementById("barcodeArtModeRow"),
+    barcodeShapeHeight: document.getElementById("barcodeShapeHeight"),
+    barcodeProtectedLaneOutput: document.getElementById("barcodeProtectedLaneOutput"),
+    barcodeArtStatus: document.getElementById("barcodeArtStatus"),
+      barcodeShapeUpload: document.getElementById("barcodeShapeUpload"),
+    clearBarcodeShapeUploadButton: document.getElementById("clearBarcodeShapeUploadButton"),
+    barcodeShapeUploadStatus: document.getElementById("barcodeShapeUploadStatus"),
     barcodeStatusStrip: document.getElementById("barcodeStatusStrip"),
     barcodeExampleButton: document.getElementById("barcodeExampleButton"),
     barcodeResetButton: document.getElementById("barcodeResetButton"),
@@ -563,7 +852,9 @@
     qrShapeGrid: document.getElementById("qrShapeGrid"),
     qrCornerGrid: document.getElementById("qrCornerGrid"),
     qrFrameGrid: document.getElementById("qrFrameGrid"),
+    qrFrameTextFields: document.getElementById("qrFrameTextFields"),
     qrLogoGrid: document.getElementById("qrLogoGrid"),
+    qrLogoTextFields: document.getElementById("qrLogoTextFields"),
     qrCornerColorMode: document.getElementById("qrCornerColorMode"),
     qrCornerColor: document.getElementById("qrCornerColor"),
     qrBackgroundColor: document.getElementById("qrBackgroundColor"),
@@ -582,8 +873,6 @@
     copyPayloadButton: document.getElementById("copyPayloadButton"),
     payloadText: document.getElementById("payloadText"),
     summaryList: document.getElementById("summaryList"),
-    runSelfCheckButton: document.getElementById("runSelfCheckButton"),
-    selfCheckStatus: document.getElementById("selfCheckStatus"),
   };
 
   let state = loadState();
@@ -592,8 +881,7 @@
     barcode: null,
     qr: null,
   };
-  let packagedFontFamilies = [];
-  let installedFontFamilies = [];
+  const barcodeArtProfileCache = new Map();
   let installedFontsLoaded = false;
   let installedFontsLoading = false;
 
@@ -607,28 +895,29 @@
 
     initializeHeroMood();
     applyTheme();
+    renderBarcodeFormatSelectors();
     renderQrTypeSelectors();
     renderQrTypeGrid();
     renderQrDesignControls();
+    renderBarcodeArtControls();
     hydrateStaticForms();
     renderQrDynamicFields();
     bindEvents();
     updateModeUI();
     updateBarcodeStatus();
-    updateSelfCheckAvailability();
     generateBarcode(false);
     generateQr(false);
     renderCurrentModeOutput();
-    primeBarcodeFontSources();
+    primeInstalledFontsIfPossible();
   }
 
   function bindEvents() {
     refs.barcodeModeButton.addEventListener("click", () => {
-      activateMode("barcode");
+      activateMode("barcode", true);
     });
 
     refs.qrModeButton.addEventListener("click", () => {
-      activateMode("qr");
+      activateMode("qr", true);
     });
 
     refs.heroBarcodeButton.addEventListener("click", (event) => {
@@ -652,10 +941,16 @@
     });
 
     refs.barcodeDigits.addEventListener("input", () => {
-      refs.barcodeDigits.value = onlyDigits(refs.barcodeDigits.value).slice(0, 13);
+      refs.barcodeDigits.value = normalizeBarcodeInputValue(getActiveBarcodeFormat(), refs.barcodeDigits.value);
       state.barcode.digits = refs.barcodeDigits.value;
       persistState();
       updateBarcodeStatus();
+    });
+
+    refs.barcodeFormat.addEventListener("change", () => {
+      state.barcode.format = pickBarcodeFormatId(refs.barcodeFormat.value);
+      state.barcode.group = getActiveBarcodeFormat().group;
+      applyBarcodeFormatDefaults(true);
     });
 
     refs.barcodeLabel.addEventListener("input", () => {
@@ -667,12 +962,19 @@
     refs.barcodeHeight.addEventListener("input", syncBarcodeSettingsFromForm);
     refs.barcodeQuietZone.addEventListener("input", syncBarcodeSettingsFromForm);
     refs.barcodeTextSize.addEventListener("input", syncBarcodeSettingsFromForm);
-    refs.barcodeFontFamily.addEventListener("input", syncBarcodeSettingsFromForm);
+    refs.barcodeFontFamily.addEventListener("change", syncBarcodeSettingsFromForm);
     refs.barcodeFontWeight.addEventListener("input", syncBarcodeSettingsFromForm);
+    refs.barcodeShapeHeight.addEventListener("input", () => {
+      syncBarcodeSettingsFromForm();
+      generateBarcode(false);
+    });
     refs.loadInstalledFontsButton.addEventListener("click", async (event) => {
       blurTriggerButton(event);
       await loadInstalledBarcodeFonts(true);
     });
+    refs.barcodeArtModeRow.addEventListener("click", handleBarcodeArtModeClick);
+    refs.barcodeShapeUpload.addEventListener("change", handleBarcodeShapeUpload);
+    refs.clearBarcodeShapeUploadButton.addEventListener("click", clearUploadedBarcodeShape);
 
     refs.barcodeForm.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -684,17 +986,27 @@
     });
 
     refs.barcodeExampleButton.addEventListener("click", () => {
+      const preservedFormat = state.barcode.format;
       state.barcode = createDefaultState().barcode;
+      state.barcode.format = pickBarcodeFormatId(preservedFormat);
+      state.barcode.group = getActiveBarcodeFormat().group;
+      state.barcode.digits = getActiveBarcodeFormat().exampleValue;
       hydrateStaticForms();
       updateBarcodeStatus();
+      renderBarcodeArtControls();
       generateBarcode(true);
       persistState();
     });
 
     refs.barcodeResetButton.addEventListener("click", () => {
+      const preservedFormat = state.barcode.format;
       state.barcode = createDefaultState().barcode;
+      state.barcode.format = pickBarcodeFormatId(preservedFormat);
+      state.barcode.group = getActiveBarcodeFormat().group;
+      state.barcode.digits = getActiveBarcodeFormat().exampleValue;
       hydrateStaticForms();
       updateBarcodeStatus();
+      renderBarcodeArtControls();
       persistState();
       generateBarcode(false);
       if (state.activeMode === "barcode") {
@@ -807,19 +1119,21 @@
         }, 1200);
       }
     });
-
-    refs.runSelfCheckButton.addEventListener("click", runSelfCheck);
   }
 
   function hydrateStaticForms() {
+    renderBarcodeFormatSelectors();
     refs.barcodeDigits.value = state.barcode.digits;
     refs.barcodeLabel.value = state.barcode.label;
     refs.barcodeModuleWidth.value = state.barcode.moduleWidth;
     refs.barcodeHeight.value = state.barcode.barHeight;
     refs.barcodeQuietZone.value = state.barcode.quietZone;
     refs.barcodeTextSize.value = state.barcode.textSize;
-    refs.barcodeFontFamily.value = state.barcode.fontFamily;
+    ensureBarcodeFontSelection(state.barcode.fontFamily);
     refs.barcodeFontWeight.value = state.barcode.fontWeight;
+    refs.barcodeShapeHeight.value = state.barcode.art.shapeHeightPercent;
+    refs.barcodeShapeUpload.value = "";
+    renderBarcodeFormatMeta();
     refs.qrTypeSelect.value = state.qr.type;
     refs.qrCornerColorMode.value = state.qr.style.cornerColorMode;
     refs.qrCornerColor.value = state.qr.style.cornerColor;
@@ -832,6 +1146,100 @@
     renderQrTypeSelectors();
     renderQrTypeGrid();
     renderQrDesignControls();
+    renderBarcodeArtControls();
+  }
+
+  function renderBarcodeFormatSelectors() {
+    state.barcode.format = pickBarcodeFormatId(state.barcode.format);
+    state.barcode.group = getActiveBarcodeFormat().group;
+    refs.barcodeFormat.innerHTML = BARCODE_GROUPS.map((group) => {
+      const options = getBarcodeFormatsForGroup(group.id)
+        .map((format) => {
+          const selected = format.id === state.barcode.format ? "selected" : "";
+          return `<option value="${escapeAttribute(format.id)}" ${selected}>${escapeHtml(format.label)}</option>`;
+        })
+        .join("");
+      return `<optgroup label="${escapeAttribute(group.label)}">${options}</optgroup>`;
+    }).join("");
+  }
+
+  function renderBarcodeFormatMeta() {
+    const format = getActiveBarcodeFormat();
+    refs.barcodeSectionTitle.textContent = `${format.label} barcode setup`;
+    refs.barcodeSectionNote.textContent = format.description;
+    refs.barcodeFormatHint.textContent = format.description;
+    refs.barcodeValueLabel.textContent = format.valueLabel;
+    refs.barcodeValueHint.textContent = format.hint;
+    refs.barcodeDigits.placeholder = format.placeholder;
+    refs.barcodeDigits.setAttribute("inputmode", format.inputMode === "numeric" ? "numeric" : "text");
+    refs.barcodeDigits.setAttribute("maxlength", getBarcodeInputMaxLength(format).toString());
+    refs.barcodeDigits.value = normalizeBarcodeInputValue(format, refs.barcodeDigits.value);
+    refs.barcodeSubmitButton.textContent = format.submitLabel;
+    refs.barcodeArtBlock.classList.toggle("disabled", !format.supportsArt);
+  }
+
+  function getBarcodeFormatsForGroup(groupId) {
+    return BARCODE_FORMATS.filter((format) => format.group === groupId);
+  }
+
+  function pickBarcodeFormatId(formatId) {
+    return barcodeFormatMap[formatId] ? formatId : BARCODE_FORMATS[0].id;
+  }
+
+  function getActiveBarcodeFormat() {
+    return barcodeFormatMap[state.barcode.format] || BARCODE_FORMATS[0];
+  }
+
+  function getBarcodeInputMaxLength(format) {
+    switch (format.id) {
+      case "ean13":
+        return 13;
+      case "ean8":
+        return 8;
+      case "upca":
+        return 12;
+      case "itf14":
+        return 14;
+      case "postnet5":
+        return 5;
+      case "postnet9":
+        return 9;
+      case "postnet11":
+        return 11;
+      case "code39":
+        return 48;
+      case "code128":
+        return 64;
+      default:
+        return 80;
+    }
+  }
+
+  function normalizeBarcodeInputValue(format, value) {
+    const maxLength = getBarcodeInputMaxLength(format);
+    if (format.inputMode === "numeric") {
+      return onlyDigits(value).slice(0, maxLength);
+    }
+    const trimmed = String(value || "").slice(0, maxLength);
+    return format.id === "code39" ? trimmed.toUpperCase() : trimmed;
+  }
+
+  function applyBarcodeFormatDefaults(regenerate) {
+    const format = getActiveBarcodeFormat();
+    state.barcode.group = format.group;
+    state.barcode.digits = format.exampleValue;
+    refs.barcodeDigits.value = format.exampleValue;
+    persistState();
+    renderBarcodeFormatSelectors();
+    renderBarcodeFormatMeta();
+    updateBarcodeStatus();
+    renderBarcodeArtControls();
+    if (regenerate) {
+      generateBarcode(false);
+      if (state.activeMode === "barcode") {
+        renderCurrentModeOutput();
+      }
+    }
   }
 
   function renderQrTypeSelectors() {
@@ -871,7 +1279,93 @@
     refs.qrShapeGrid.innerHTML = renderDesignButtonMarkup(QR_SHAPE_OPTIONS, state.qr.style.shape, "shape", renderShapePreview);
     refs.qrCornerGrid.innerHTML = renderDesignButtonMarkup(QR_CORNER_OPTIONS, state.qr.style.corner, "corner", renderCornerPreview);
     refs.qrFrameGrid.innerHTML = renderDesignButtonMarkup(QR_FRAME_OPTIONS, state.qr.style.frame, "frame", renderFramePreview);
+    renderQrFrameTextFields();
     refs.qrLogoGrid.innerHTML = renderDesignButtonMarkup(QR_LOGO_OPTIONS, state.qr.style.logo, "logo", renderLogoPreview);
+    renderQrLogoTextFields();
+  }
+
+  function renderQrFrameTextFields() {
+    const frame = state.qr.style.frame;
+    if (frame === "none") {
+      refs.qrFrameTextFields.innerHTML = "";
+      return;
+    }
+
+    const texts = getQrFrameTexts();
+    const showTop = frame === "scan-top-bottom" || frame === "ticket";
+    const showBottom = frame === "scan-bottom" || frame === "scan-top-bottom" || frame === "badge";
+    const fields = [];
+
+    if (showTop) {
+      fields.push(`
+        <label class="field">
+          <span>Top frame text</span>
+          <input
+            id="qrFrameTopText"
+            name="qrFrameTopText"
+            type="text"
+            maxlength="42"
+            autocomplete="off"
+            value="${escapeAttribute(texts.top)}"
+            placeholder="OPEN"
+            data-qr-frame-text="top"
+          >
+            <small class="field-hint">Longer text can wrap into two lines. Try OPEN, WIFI, MENU, or INFO.</small>
+        </label>
+      `);
+    }
+
+    if (showBottom) {
+      fields.push(`
+        <label class="field">
+          <span>Bottom frame text</span>
+          <input
+            id="qrFrameBottomText"
+            name="qrFrameBottomText"
+            type="text"
+            maxlength="42"
+            autocomplete="off"
+            value="${escapeAttribute(texts.bottom)}"
+            placeholder="SCAN ME"
+            data-qr-frame-text="bottom"
+          >
+            <small class="field-hint">Use a clear call to action like SCAN ME, TAP HERE, or CONNECT.</small>
+        </label>
+      `);
+    }
+
+    refs.qrFrameTextFields.innerHTML = fields.join("");
+    refs.qrFrameTextFields.querySelectorAll("[data-qr-frame-text]").forEach((input) => {
+      input.addEventListener("input", handleQrFrameTextChange);
+    });
+  }
+
+  function renderQrLogoTextFields() {
+    const logo = state.qr.style.logo;
+    if (logo !== "type" && logo !== "scan") {
+      refs.qrLogoTextFields.innerHTML = "";
+      return;
+    }
+
+    const isScanLogo = logo === "scan";
+    const currentValue = safeTrim(state.qr.style.logoText) || (isScanLogo ? "SCAN ME" : "");
+    refs.qrLogoTextFields.innerHTML = `
+      <label class="field">
+        <span>Center logo text</span>
+        <input
+          id="qrLogoTypeText"
+          name="qrLogoTypeText"
+          type="text"
+          maxlength="16"
+          autocomplete="off"
+          value="${escapeAttribute(currentValue)}"
+          placeholder="${isScanLogo ? "SCAN ME" : "MENU"}"
+          data-qr-logo-text="${escapeAttribute(logo)}"
+        >
+        <small class="field-hint">${isScanLogo ? "Write your call to action here. Bigger words split into two lines automatically." : "Write up to 16 characters. Longer words split into two lines automatically."}</small>
+      </label>
+    `;
+    refs.qrLogoTextFields.querySelector("[data-qr-logo-text]")?.addEventListener("input", handleQrLogoTextChange);
   }
 
   function renderQrDynamicFields() {
@@ -888,7 +1382,14 @@
       const name = `qr-${type.id}-${field.key}`;
       const common = `id="${name}" name="${field.key}" data-qr-field="${field.key}" ${required}`;
 
-      const fieldClass = field.type === "textarea" || type.fields.length === 1 ? "field field-span-2" : "field";
+      const fieldClassNames = ["field"];
+      if (field.type === "textarea" || type.fields.length === 1 || field.span === 2) {
+        fieldClassNames.push("field-span-2");
+      }
+      if (field.className) {
+        fieldClassNames.push(field.className);
+      }
+      const fieldClass = fieldClassNames.join(" ");
 
       if (field.type === "textarea") {
         return `
@@ -963,19 +1464,78 @@
     generateQr(false);
   }
 
+  function handleQrFrameTextChange(event) {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) {
+      return;
+    }
+
+    const slot = target.getAttribute("data-qr-frame-text");
+    if (slot === "top") {
+      state.qr.style.frameTopText = target.value.slice(0, 42);
+    } else if (slot === "bottom") {
+      state.qr.style.frameBottomText = target.value.slice(0, 42);
+    } else {
+      return;
+    }
+
+    persistState();
+    generateQr(false);
+  }
+
+  function handleQrLogoTextChange(event) {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || !target.getAttribute("data-qr-logo-text")) {
+      return;
+    }
+
+    state.qr.style.logoText = target.value.slice(0, 16);
+    persistState();
+    generateQr(false);
+  }
+
+  function getQrFrameTexts() {
+    const type = qrTypeMap[state.qr.type] || QR_TYPES[0];
+    return {
+      top: safeTrim(state.qr.style.frameTopText) || type.short,
+      bottom: safeTrim(state.qr.style.frameBottomText) || "SCAN ME",
+    };
+  }
+
+  function getQrLogoText(type) {
+    const custom = safeTrim(state.qr.style.logoText);
+    if (custom) {
+      return custom;
+    }
+    if (state.qr.style.logo === "scan") {
+      return "SCAN ME";
+    }
+    return state.qr.style.logo === "type" ? type.short : "";
+  }
+
   function syncBarcodeSettingsFromForm() {
+    state.barcode.format = pickBarcodeFormatId(refs.barcodeFormat.value);
+    state.barcode.group = getActiveBarcodeFormat().group;
+    const format = getActiveBarcodeFormat();
     state.barcode.moduleWidth = clampNumber(refs.barcodeModuleWidth.value, 1, 10, 3);
-    state.barcode.barHeight = clampNumber(refs.barcodeHeight.value, 60, 280, 132);
+    state.barcode.barHeight = clampNumber(refs.barcodeHeight.value, 48, 280, 132);
     state.barcode.quietZone = clampNumber(refs.barcodeQuietZone.value, 8, 32, 11);
     state.barcode.textSize = clampNumber(refs.barcodeTextSize.value, 14, 56, 28);
     state.barcode.fontFamily = safeTrim(refs.barcodeFontFamily.value).slice(0, 120) || BARCODE_FONT_FAMILY;
     state.barcode.fontWeight = clampNumber(refs.barcodeFontWeight.value, 400, 800, 400);
+    state.barcode.art.shapeHeightPercent = clampNumber(refs.barcodeShapeHeight.value, 18, 46, 36);
+    state.barcode.digits = normalizeBarcodeInputValue(format, refs.barcodeDigits.value);
     refs.barcodeModuleWidth.value = state.barcode.moduleWidth;
     refs.barcodeHeight.value = state.barcode.barHeight;
     refs.barcodeQuietZone.value = state.barcode.quietZone;
     refs.barcodeTextSize.value = state.barcode.textSize;
-    refs.barcodeFontFamily.value = state.barcode.fontFamily;
+    ensureBarcodeFontSelection(state.barcode.fontFamily);
     refs.barcodeFontWeight.value = state.barcode.fontWeight;
+    refs.barcodeShapeHeight.value = state.barcode.art.shapeHeightPercent;
+    refs.barcodeDigits.value = state.barcode.digits;
+    if (refs.barcodeProtectedLaneOutput) {
+      refs.barcodeProtectedLaneOutput.textContent = `${Math.round(BARCODE_PROTECTED_RATIO * 100)}%`;
+    }
     persistState();
   }
 
@@ -985,6 +1545,12 @@
     state.qr.style.corner = pickOptionId(QR_CORNER_OPTIONS, state.qr.style.corner);
     state.qr.style.frame = pickOptionId(QR_FRAME_OPTIONS, state.qr.style.frame);
     state.qr.style.logo = pickOptionId(QR_LOGO_OPTIONS, state.qr.style.logo);
+    const topField = refs.qrFrameTextFields.querySelector('[data-qr-frame-text="top"]');
+    const bottomField = refs.qrFrameTextFields.querySelector('[data-qr-frame-text="bottom"]');
+    const logoField = refs.qrLogoTextFields.querySelector("[data-qr-logo-text]");
+    state.qr.style.frameTopText = String(topField ? topField.value : state.qr.style.frameTopText || "").slice(0, 42);
+    state.qr.style.frameBottomText = String(bottomField ? bottomField.value : state.qr.style.frameBottomText || "").slice(0, 42);
+    state.qr.style.logoText = String(logoField ? logoField.value : state.qr.style.logoText || "").slice(0, 16);
     state.qr.style.cornerColorMode = refs.qrCornerColorMode.value === "custom" ? "custom" : "main";
     state.qr.style.cornerColor = normalizeHexColor(refs.qrCornerColor.value, "#14213d");
     state.qr.style.backgroundColor = normalizeHexColor(refs.qrBackgroundColor.value, "#ffffff");
@@ -997,8 +1563,125 @@
     refs.qrBackgroundColor.value = state.qr.style.backgroundColor;
     refs.qrDarkColor.value = state.qr.style.darkColor;
     updateCornerColorControl();
-    renderQrDesignControls();
     persistState();
+  }
+
+  function renderBarcodeArtControls() {
+    const format = getActiveBarcodeFormat();
+    const mode = pickBarcodeArtMode(state.barcode.art.mode);
+    const canUseArt = format.supportsArt;
+    state.barcode.art.mode = canUseArt ? mode : "none";
+    refs.barcodeArtBlock.setAttribute("data-art-mode", canUseArt ? mode : "none");
+    refs.barcodeArtBlock.classList.toggle("disabled", !canUseArt);
+    if (!canUseArt) {
+      refs.barcodeArtDetails.open = false;
+    } else if (state.barcode.art.mode === "upload") {
+      refs.barcodeArtDetails.open = true;
+    }
+    refs.barcodeShapeHeight.value = state.barcode.art.shapeHeightPercent;
+    refs.barcodeProtectedLaneOutput.textContent = `${Math.round(BARCODE_PROTECTED_RATIO * 100)}%`;
+
+    refs.barcodeArtModeRow.querySelectorAll("[data-barcode-art-mode]").forEach((button) => {
+      const nextMode = button.getAttribute("data-barcode-art-mode");
+      button.classList.toggle("active", nextMode === state.barcode.art.mode);
+      button.disabled = !canUseArt;
+    });
+    refs.clearBarcodeShapeUploadButton.disabled = !state.barcode.art.uploadProfile || !canUseArt;
+    setBarcodeShapeUploadStatus(
+      state.barcode.art.uploadName
+        ? `${state.barcode.art.uploadName} is ready for custom SVG art.`
+        : "No SVG uploaded yet.",
+      state.barcode.art.uploadProfile ? "ready" : "",
+    );
+
+    refs.barcodeShapeUpload.disabled = !canUseArt;
+
+    if (!canUseArt) {
+      setBarcodeArtStatus(`${format.label} stays clean and standard here. Custom SVG art is available on the supported barcode types in the list above.`, "");
+      return;
+    }
+
+    if (state.barcode.art.mode === "upload") {
+      if (state.barcode.art.uploadProfile) {
+        setBarcodeArtStatus(`${state.barcode.art.uploadName} is active. The barcode keeps the lower scan lane clean and uses the SVG silhouette above it.`, "valid");
+      } else {
+        setBarcodeArtStatus("Upload an SVG silhouette to activate custom barcode art. Until then, the barcode stays clean.", "");
+      }
+      return;
+    }
+
+    setBarcodeArtStatus("Clean barcode mode is active. Switch to SVG art only when you want your own uploaded shape.", "");
+  }
+
+  function handleBarcodeArtModeClick(event) {
+    if (!getActiveBarcodeFormat().supportsArt) {
+      return;
+    }
+    const button = event.target.closest("[data-barcode-art-mode]");
+    if (!button) {
+      return;
+    }
+
+    const nextMode = pickBarcodeArtMode(button.getAttribute("data-barcode-art-mode"));
+    state.barcode.art.mode = nextMode;
+    persistState();
+    renderBarcodeArtControls();
+    generateBarcode(false);
+  }
+
+  async function handleBarcodeShapeUpload(event) {
+    if (!getActiveBarcodeFormat().supportsArt) {
+      return;
+    }
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || !target.files || !target.files[0]) {
+      return;
+    }
+
+    const file = target.files[0];
+    setBarcodeShapeUploadStatus(`Reading ${file.name}...`, "");
+
+    try {
+      const markup = await file.text();
+      const profile = await createBarcodeProfileFromSvg(markup, 240);
+      state.barcode.art.uploadName = file.name;
+      state.barcode.art.uploadSvg = markup;
+      state.barcode.art.uploadProfile = profile;
+      state.barcode.art.mode = "upload";
+      persistState();
+      renderBarcodeArtControls();
+      generateBarcode(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "The SVG silhouette could not be read.";
+      setBarcodeShapeUploadStatus(message, "warn");
+      setBarcodeArtStatus(message, "invalid");
+    }
+  }
+
+  function clearUploadedBarcodeShape() {
+    state.barcode.art.uploadName = "";
+    state.barcode.art.uploadSvg = "";
+    state.barcode.art.uploadProfile = null;
+    refs.barcodeShapeUpload.value = "";
+    persistState();
+    renderBarcodeArtControls();
+    generateBarcode(false);
+  }
+
+  function pickBarcodeArtMode(mode) {
+    return mode === "upload" ? "upload" : "none";
+  }
+
+  function setBarcodeArtStatus(message, tone) {
+    setStatusStrip(refs.barcodeArtStatus, message, tone);
+  }
+
+  function setBarcodeShapeUploadStatus(message, tone) {
+    refs.barcodeShapeUploadStatus.textContent = message;
+    refs.barcodeShapeUploadStatus.classList.remove("ready", "warn");
+    if (tone === "ready" || tone === "warn") {
+      refs.barcodeShapeUploadStatus.classList.add(tone);
+    }
   }
 
   function updateModeUI() {
@@ -1059,10 +1742,11 @@
   }
 
   function updateBarcodeStatus() {
-    const analysis = analyzeEAN13(refs.barcodeDigits.value);
+    const format = getActiveBarcodeFormat();
+    const analysis = analyzeBarcodeValue(format, refs.barcodeDigits.value);
 
     if (analysis.empty) {
-      setStatusStrip(refs.barcodeStatusStrip, "Waiting for digits.", "neutral");
+      setStatusStrip(refs.barcodeStatusStrip, `Waiting for ${format.label} data.`, "neutral");
       refs.barcodeDigits.setCustomValidity("");
       return;
     }
@@ -1074,19 +1758,15 @@
     }
 
     refs.barcodeDigits.setCustomValidity("");
-    if (analysis.wasAutoCompleted) {
-      setStatusStrip(refs.barcodeStatusStrip, `Valid EAN-13. Check digit auto-completed to ${analysis.checkDigit}. Final code: ${analysis.normalized}`, "valid");
-      return;
-    }
-
-    setStatusStrip(refs.barcodeStatusStrip, `Valid EAN-13 confirmed. Check digit ${analysis.checkDigit} matches.`, "valid");
+    setStatusStrip(refs.barcodeStatusStrip, analysis.statusMessage || `${format.label} is ready.`, "valid");
   }
 
   function generateBarcode(reportIssues) {
     syncBarcodeSettingsFromForm();
     updateBarcodeStatus();
 
-    const analysis = analyzeEAN13(refs.barcodeDigits.value);
+    const format = getActiveBarcodeFormat();
+    const analysis = analyzeBarcodeValue(format, refs.barcodeDigits.value);
     if (!analysis.valid) {
       if (reportIssues) {
         refs.barcodeDigits.reportValidity();
@@ -1096,35 +1776,42 @@
 
     refs.barcodeDigits.value = analysis.normalized;
     state.barcode.digits = analysis.normalized;
+    const artConfig = format.supportsArt ? getActiveBarcodeArtConfig() : {
+      enabled: false,
+      mode: "none",
+      label: "Clean barcode",
+      profile: null,
+    };
 
-    const svgResult = createEAN13Svg(analysis.normalized, {
+    const svgResult = createBarcodeSvg(format, analysis, {
       moduleWidth: state.barcode.moduleWidth,
       barHeight: state.barcode.barHeight,
       quietZone: state.barcode.quietZone,
       textSize: state.barcode.textSize,
       fontFamily: resolveBarcodeFontFamily(),
       fontWeight: state.barcode.fontWeight,
+      artProfile: artConfig.profile,
+      artPreset: null,
+      artEnabled: artConfig.enabled,
+      artLabel: artConfig.label,
+      artMode: artConfig.mode,
+      protectedRatio: BARCODE_PROTECTED_RATIO,
+      shapeHeightPercent: state.barcode.art.shapeHeightPercent,
     });
 
     outputs.barcode = {
       mode: "barcode",
-      badge: "EAN-13 Ready",
-      previewTitle: `EAN-13 barcode for ${analysis.normalized}`,
+      badge: artConfig.enabled ? `${format.label} + custom SVG art` : `${format.label} Ready`,
+      previewTitle: artConfig.enabled
+        ? `${format.label} custom art barcode for ${analysis.normalized}`
+        : `${format.label} barcode for ${analysis.normalized}`,
       payload: analysis.normalized,
       svg: svgResult.svg,
       model: svgResult.model,
       width: svgResult.width,
       height: svgResult.height,
-      fileBase: slugify(state.barcode.label || `ean13-${analysis.normalized}`),
-      summaryRows: [
-        ["Type", "EAN-13"],
-        ["Digits", analysis.normalized],
-        ["Check digit", analysis.checkDigit],
-        ["Pattern width", `${svgResult.width}px`],
-        ["Digit style", `${state.barcode.textSize}px / ${describeBarcodeFont()} / ${state.barcode.fontWeight}`],
-        ["Exports", "SVG vector, PDF vector, PNG transparent"],
-        ["Status", analysis.wasAutoCompleted ? "Auto-completed from 12 digits" : "Validated from 13 digits"],
-      ],
+      fileBase: slugify(state.barcode.label || `${format.id}-${analysis.normalized}`),
+      summaryRows: buildBarcodeSummaryRows(format, analysis, svgResult),
     };
 
     persistState();
@@ -1198,7 +1885,9 @@
       shape: state.qr.style.shape,
       corner: state.qr.style.corner,
       frame: state.qr.style.frame,
+      frameTexts: getQrFrameTexts(),
       logo: state.qr.style.logo,
+      logoText: getQrLogoText(type),
       typeShort: type.short,
       title: `${type.label} QR`,
       description: `${type.label} QR code`,
@@ -1224,7 +1913,7 @@
         ["Matrix size", `${moduleCount} Ã— ${moduleCount}`],
         ["Design", `${findOptionLabel(QR_SHAPE_OPTIONS, state.qr.style.shape)} / ${findOptionLabel(QR_CORNER_OPTIONS, state.qr.style.corner)}`],
         ["Output size", `${model.width}px Ã— ${model.height}px`],
-        ["Exports", "SVG vector, PDF vector, PNG transparent"],
+        ["Exports", "SVG, PDF, PNG"],
       ],
     };
   }
@@ -1399,6 +2088,23 @@
       detail: `${barcodeSvg.width}px wide, ${barcodeSvg.height}px tall.`,
     });
 
+    const artisticBarcode = createEAN13Svg("5901234123457", {
+      moduleWidth: 3,
+      barHeight: 132,
+      quietZone: 12,
+      artEnabled: true,
+      artProfile: Array.from({ length: 220 }, (_value, index) => 0.5 + (Math.sin(index / 15) * 0.25)),
+      artPreset: null,
+      artLabel: "Custom SVG art",
+      protectedRatio: BARCODE_PROTECTED_RATIO,
+      shapeHeightPercent: 36,
+    });
+    results.push({
+      name: "Barcode custom art structure",
+      pass: artisticBarcode.meta.artEnabled && artisticBarcode.model.rects.length === barcodeSvg.model.rects.length,
+      detail: `${artisticBarcode.meta.artLabel}, protected lane ${Math.round(artisticBarcode.meta.protectedRatio * 100)}%.`,
+    });
+
     const wifiPayload = buildWifi(getDefaultValuesForType("wifi"));
     results.push({
       name: "WiFi payload format",
@@ -1465,33 +2171,50 @@
     return values;
   }
 
-  function analyzeEAN13(rawValue) {
+  function analyzeBarcodeValue(format, rawValue) {
+    switch (format.id) {
+      case "ean13":
+        return analyzeEAN13(rawValue);
+      case "ean8":
+        return analyzeEAN8(rawValue);
+      case "upca":
+        return analyzeUPCA(rawValue);
+      case "code128":
+        return analyzeCode128(rawValue);
+      case "code39":
+        return analyzeCode39(rawValue);
+      case "itf14":
+        return analyzeITF14(rawValue);
+      case "postnet5":
+        return analyzePostnet(rawValue, 5, "USPS POSTNET 5");
+      case "postnet9":
+        return analyzePostnet(rawValue, 9, "USPS POSTNET 9");
+      case "postnet11":
+        return analyzePostnet(rawValue, 11, "USPS POSTNET 11");
+      default:
+        return analyzeEAN13(rawValue);
+    }
+  }
+
+  function analyzeEanLike(rawValue, options) {
     const digits = onlyDigits(rawValue || "");
     if (!digits.length) {
-      return { empty: true, valid: false, message: "Waiting for digits." };
+      return { empty: true, valid: false, message: `Waiting for ${options.label} digits.` };
     }
 
-    if (digits.length !== 12 && digits.length !== 13) {
+    if (digits.length !== options.baseLength && digits.length !== options.fullLength) {
       return {
         empty: false,
         valid: false,
-        message: "EAN-13 must contain exactly 12 or 13 digits.",
+        message: `${options.label} must contain exactly ${options.baseLength} or ${options.fullLength} digits.`,
       };
     }
 
-    if (!/^\d+$/.test(digits)) {
-      return {
-        empty: false,
-        valid: false,
-        message: "EAN-13 accepts digits only.",
-      };
-    }
+    const base = digits.slice(0, options.baseLength);
+    const checkDigit = computeModulo10CheckDigit(base);
+    const normalized = digits.length === options.baseLength ? `${digits}${checkDigit}` : digits;
 
-    const base = digits.slice(0, 12);
-    const checkDigit = computeEAN13CheckDigit(base);
-    const normalized = digits.length === 12 ? `${digits}${checkDigit}` : digits;
-
-    if (normalized[12] !== checkDigit) {
+    if (normalized[options.baseLength] !== checkDigit) {
       return {
         empty: false,
         valid: false,
@@ -1502,10 +2225,152 @@
     return {
       empty: false,
       valid: true,
-      wasAutoCompleted: digits.length === 12,
       normalized,
+      base,
       checkDigit,
+      wasAutoCompleted: digits.length === options.baseLength,
+      statusMessage: digits.length === options.baseLength
+        ? `Valid ${options.label}. Check digit auto-completed to ${checkDigit}. Final code: ${normalized}`
+        : `Valid ${options.label} confirmed. Check digit ${checkDigit} matches.`,
     };
+  }
+
+  function analyzeEAN13(rawValue) {
+    return analyzeEanLike(rawValue, {
+      label: "EAN-13",
+      baseLength: 12,
+      fullLength: 13,
+    });
+  }
+
+  function analyzeEAN8(rawValue) {
+    return analyzeEanLike(rawValue, {
+      label: "EAN-8",
+      baseLength: 7,
+      fullLength: 8,
+    });
+  }
+
+  function analyzeUPCA(rawValue) {
+    return analyzeEanLike(rawValue, {
+      label: "UPC-A",
+      baseLength: 11,
+      fullLength: 12,
+    });
+  }
+
+  function analyzeITF14(rawValue) {
+    return analyzeEanLike(rawValue, {
+      label: "ITF-14",
+      baseLength: 13,
+      fullLength: 14,
+    });
+  }
+
+  function analyzeCode39(rawValue) {
+    const normalized = safeTrim(rawValue).toUpperCase();
+    if (!normalized) {
+      return { empty: true, valid: false, message: "Waiting for Code 39 text." };
+    }
+
+    if (normalized.length > 48) {
+      return {
+        empty: false,
+        valid: false,
+        message: "Code 39 is limited to 48 visible characters here for reliable output size.",
+      };
+    }
+
+    const invalid = normalized.split("").find((character) => !CODE39_PATTERN_MAP[character] || character === "*");
+    if (invalid) {
+      return {
+        empty: false,
+        valid: false,
+        message: `Code 39 cannot encode "${invalid}" here. Use uppercase letters, digits, spaces, or - . $ / + %.`,
+      };
+    }
+
+    return {
+      empty: false,
+      valid: true,
+      normalized,
+      statusMessage: "Valid Code 39 data is ready.",
+    };
+  }
+
+  function analyzeCode128(rawValue) {
+    const normalized = safeTrim(rawValue);
+    if (!normalized) {
+      return { empty: true, valid: false, message: "Waiting for Code 128 text." };
+    }
+
+    if (normalized.length > 64) {
+      return {
+        empty: false,
+        valid: false,
+        message: "Code 128 is limited to 64 characters here so exports stay practical.",
+      };
+    }
+
+    const invalid = normalized.split("").find((character) => {
+      const code = character.charCodeAt(0);
+      return code < 32 || code > 126;
+    });
+
+    if (invalid) {
+      return {
+        empty: false,
+        valid: false,
+        message: "Code 128 here supports standard printable ASCII characters only.",
+      };
+    }
+
+    return {
+      empty: false,
+      valid: true,
+      normalized,
+      statusMessage: "Valid Code 128 data is ready.",
+    };
+  }
+
+  function analyzePostnet(rawValue, expectedLength, label) {
+    const digits = onlyDigits(rawValue || "");
+    if (!digits.length) {
+      return { empty: true, valid: false, message: `Waiting for ${label} digits.` };
+    }
+
+    if (digits.length !== expectedLength) {
+      return {
+        empty: false,
+        valid: false,
+        message: `${label} needs exactly ${expectedLength} digits before the automatic check digit.`,
+      };
+    }
+
+    const checkDigit = computeModulo10CheckDigit(digits);
+    return {
+      empty: false,
+      valid: true,
+      normalized: `${digits}${checkDigit}`,
+      rawDigits: digits,
+      checkDigit,
+      statusMessage: `${label} is ready. USPS check digit ${checkDigit} was added automatically.`,
+    };
+  }
+
+  function computeModulo10CheckDigit(baseDigits) {
+    const digits = onlyDigits(baseDigits);
+    if (!digits) {
+      throw new Error("A numeric barcode check digit needs at least one base digit.");
+    }
+
+    let sum = 0;
+    let useThree = true;
+    for (let index = digits.length - 1; index >= 0; index -= 1) {
+      sum += Number(digits[index]) * (useThree ? 3 : 1);
+      useThree = !useThree;
+    }
+    return String((10 - (sum % 10)) % 10);
   }
 
   function computeEAN13CheckDigit(digits12) {
@@ -1513,23 +2378,85 @@
     if (digits.length !== 12) {
       throw new Error("EAN-13 check digit calculation requires exactly 12 digits.");
     }
-
-    let sum = 0;
-    for (let index = 0; index < digits.length; index += 1) {
-      const value = Number(digits[index]);
-      sum += value * (index % 2 === 0 ? 1 : 3);
-    }
-
-    return String((10 - (sum % 10)) % 10);
+    return computeModulo10CheckDigit(digits);
   }
 
-  function createEAN13Svg(digits, options) {
-    const bitString = buildEAN13BitString(digits);
+  function createBarcodeSvg(format, analysis, options) {
+    switch (format.id) {
+      case "ean13":
+        return createEAN13Svg(analysis.normalized, options);
+      case "ean8":
+        return createEAN8Svg(analysis.normalized, options);
+      case "upca":
+        return createUPCASvg(analysis.normalized, options);
+      case "code39":
+        return createCode39Svg(analysis.normalized, options);
+      case "code128":
+        return createCode128Svg(analysis.normalized, options);
+      case "itf14":
+        return createITF14Svg(analysis.normalized, options);
+      case "postnet5":
+      case "postnet9":
+      case "postnet11":
+        return createPostnetSvg(analysis, format, options);
+      default:
+        return createEAN13Svg(analysis.normalized, options);
+    }
+  }
+
+  function buildBarcodeSummaryRows(format, analysis, svgResult) {
+    const rows = [
+      ["Type", format.label],
+      ["Encoded value", analysis.normalized],
+    ];
+
+    if (analysis.checkDigit !== undefined && format.id !== "code39" && format.id !== "code128") {
+      rows.push(["Check digit", analysis.checkDigit]);
+    }
+
+    if (format.id === "code128") {
+      rows.push(["Encoding", svgResult.meta.encoding || "Auto Code B / C"]);
+    }
+
+    if (format.id === "code39") {
+      rows.push(["Charset", "Uppercase letters, digits, and standard Code 39 symbols"]);
+    }
+
+    if (format.id.startsWith("postnet")) {
+      rows.push(["Postal digits", analysis.rawDigits]);
+    }
+
+    if (format.supportsArt) {
+      rows.push(["Barcode art", svgResult.meta.artLabel]);
+      rows.push(["Protected lane", `${Math.round(svgResult.meta.protectedRatio * 100)}% standard scan zone`]);
+    }
+
+    rows.push(["Pattern width", `${svgResult.width}px`]);
+    rows.push(["Digit style", `${state.barcode.textSize}px / ${describeBarcodeFont()} / ${state.barcode.fontWeight}`]);
+    rows.push(["Exports", "SVG, PDF, PNG"]);
+
+    if (analysis.wasAutoCompleted) {
+      rows.push(["Status", "Auto-completed from base digits"]);
+    } else if (analysis.statusMessage) {
+      rows.push(["Status", analysis.statusMessage.replace(/^Valid /, "")]);
+    }
+
+    return rows;
+  }
+
+  function createRetailBarcodeSvg(spec, options) {
+    const bitString = spec.bitString;
     const moduleWidth = Number(options.moduleWidth);
     const barHeight = Number(options.barHeight);
     const quietZone = Number(options.quietZone);
     const fontFamily = safeTrim(options.fontFamily) || BARCODE_FONT_FAMILY;
     const fontWeight = clampNumber(options.fontWeight, 400, 800, 400);
+    const protectedRatio = clampNumber(options.protectedRatio, 0.5, 0.82, BARCODE_PROTECTED_RATIO);
+    const artEnabled = options.artEnabled === true && Array.isArray(options.artProfile) && options.artProfile.length > 1;
+    const requestedShapeRatio = clampNumber(options.shapeHeightPercent, 18, 46, 36) / 100;
+    const artRatio = artEnabled ? Math.min(requestedShapeRatio, 1 - protectedRatio) : 0;
+    const artHeight = artEnabled ? Math.max(moduleWidth * 6, Math.round(barHeight * artRatio)) : 0;
+    const scanLaneHeight = artEnabled ? Math.max(moduleWidth * 14, barHeight - artHeight) : barHeight;
     const guardExtra = Math.max(12, moduleWidth * 4);
     const textSize = clampNumber(options.textSize, 14, 56, Math.max(18, moduleWidth * 5.6));
     const topPadding = 18;
@@ -1543,55 +2470,28 @@
       if (bitString[index] !== "1") {
         continue;
       }
+
       const x = (quietZone + index) * moduleWidth;
-      const isGuard = index < 3 || (index >= 45 && index < 50) || index >= 92;
-      const height = barHeight + (isGuard ? guardExtra : 0);
-      rects.push({
-        x,
-        y: topPadding,
-        width: moduleWidth,
-        height,
-        fill: BARCODE_INK,
-      });
+      const isGuard = (spec.guardRanges || []).some((range) => index >= range.start && index < range.end);
+      const profileValue = artEnabled && !isGuard
+        ? sampleBarcodeProfile(options.artProfile, index / Math.max(1, bitString.length - 1))
+        : 0;
+      const artLift = artEnabled && !isGuard ? Math.round(artHeight * profileValue) : artHeight;
+      const y = topPadding + Math.max(0, artHeight - artLift);
+      const height = (scanLaneHeight + artLift) + (isGuard ? guardExtra : 0);
+      rects.push({ x, y, width: moduleWidth, height, fill: BARCODE_INK });
     }
 
-    const startX = quietZone;
-    texts.push({
-      x: (startX - 4.5) * moduleWidth,
-      y: textY,
-      anchor: "middle",
-      size: textSize,
-      fill: BARCODE_INK,
-      fontFamily,
-      fontWeight,
-      text: digits[0],
-    });
-
-    for (let index = 1; index <= 6; index += 1) {
-      const center = (startX + 3 + (index - 1) * 7 + 3.5) * moduleWidth;
+    for (const item of spec.textItems) {
       texts.push({
-        x: center,
+        x: item.xModules * moduleWidth,
         y: textY,
-        anchor: "middle",
+        anchor: item.anchor || "middle",
         size: textSize,
         fill: BARCODE_INK,
         fontFamily,
         fontWeight,
-        text: digits[index],
-      });
-    }
-
-    for (let index = 7; index <= 12; index += 1) {
-      const center = (startX + 3 + 42 + 5 + (index - 7) * 7 + 3.5) * moduleWidth;
-      texts.push({
-        x: center,
-        y: textY,
-        anchor: "middle",
-        size: textSize,
-        fill: BARCODE_INK,
-        fontFamily,
-        fontWeight,
-        text: digits[index],
+        text: item.text,
       });
     }
 
@@ -1599,18 +2499,1174 @@
       width: totalWidth,
       height: totalHeight,
       background: "#ffffff",
-      title: `EAN-13 barcode ${digits}`,
-      description: `EAN-13 barcode ${digits}`,
+      title: spec.title,
+      description: spec.description,
       rects,
+      paths: [],
       texts,
     };
+
+    if (artEnabled && options.artPreset && typeof options.artPreset.decorate === "function") {
+      applyBarcodeArtPreset(model, options.artPreset, {
+        barcodeLeft: quietZone * moduleWidth,
+        barcodeWidth: bitString.length * moduleWidth,
+        topPadding,
+        barHeight,
+        artHeight,
+        scanLaneHeight,
+        moduleWidth,
+        totalHeight,
+      });
+    }
 
     return {
       svg: renderVectorSvg(model, { includeBackground: true }),
       model,
       width: totalWidth,
       height: totalHeight,
+      meta: {
+        artEnabled,
+        artLabel: artEnabled ? (safeTrim(options.artLabel) || "Custom art") : "Clean barcode",
+        protectedRatio,
+      },
     };
+  }
+
+  function createEAN13Svg(digits, options) {
+    const startX = Number(options.quietZone);
+    const textItems = [
+      { xModules: startX - 4.5, text: digits[0] },
+      ...digits.slice(1, 7).split("").map((digit, index) => ({
+        xModules: startX + 3 + index * 7 + 3.5,
+        text: digit,
+      })),
+      ...digits.slice(7).split("").map((digit, index) => ({
+        xModules: startX + 3 + 42 + 5 + index * 7 + 3.5,
+        text: digit,
+      })),
+    ];
+
+    return createRetailBarcodeSvg({
+      bitString: buildEAN13BitString(digits),
+      guardRanges: [{ start: 0, end: 3 }, { start: 45, end: 50 }, { start: 92, end: 95 }],
+      textItems,
+      title: options.artEnabled ? `EAN-13 creative barcode ${digits}` : `EAN-13 barcode ${digits}`,
+      description: options.artEnabled ? `EAN-13 creative barcode ${digits}` : `EAN-13 barcode ${digits}`,
+    }, options);
+  }
+
+  function createEAN8Svg(digits, options) {
+    const startX = Number(options.quietZone);
+    const textItems = [
+      ...digits.slice(0, 4).split("").map((digit, index) => ({
+        xModules: startX + 3 + index * 7 + 3.5,
+        text: digit,
+      })),
+      ...digits.slice(4).split("").map((digit, index) => ({
+        xModules: startX + 3 + 28 + 5 + index * 7 + 3.5,
+        text: digit,
+      })),
+    ];
+
+    return createRetailBarcodeSvg({
+      bitString: buildEAN8BitString(digits),
+      guardRanges: [{ start: 0, end: 3 }, { start: 31, end: 36 }, { start: 64, end: 67 }],
+      textItems,
+      title: options.artEnabled ? `EAN-8 creative barcode ${digits}` : `EAN-8 barcode ${digits}`,
+      description: options.artEnabled ? `EAN-8 creative barcode ${digits}` : `EAN-8 barcode ${digits}`,
+    }, options);
+  }
+
+  function createUPCASvg(digits, options) {
+    const startX = Number(options.quietZone);
+    const textItems = [
+      { xModules: startX - 4.5, text: digits[0] },
+      ...digits.slice(1, 6).split("").map((digit, index) => ({
+        xModules: startX + 3 + 7 + index * 7 + 3.5,
+        text: digit,
+      })),
+      ...digits.slice(6, 11).split("").map((digit, index) => ({
+        xModules: startX + 3 + 42 + 5 + index * 7 + 3.5,
+        text: digit,
+      })),
+      { xModules: startX + 95 + 4.5, text: digits[11] },
+    ];
+
+    return createRetailBarcodeSvg({
+      bitString: buildUPCABitString(digits),
+      guardRanges: [{ start: 0, end: 3 }, { start: 45, end: 50 }, { start: 92, end: 95 }],
+      textItems,
+      title: options.artEnabled ? `UPC-A creative barcode ${digits}` : `UPC-A barcode ${digits}`,
+      description: options.artEnabled ? `UPC-A creative barcode ${digits}` : `UPC-A barcode ${digits}`,
+    }, options);
+  }
+
+  function createSequenceBarcodeSvg(spec, options) {
+    const moduleWidth = Number(options.moduleWidth);
+    const barHeight = Number(options.barHeight);
+    const quietZone = Number(options.quietZone);
+    const fontFamily = safeTrim(options.fontFamily) || BARCODE_FONT_FAMILY;
+    const fontWeight = clampNumber(options.fontWeight, 400, 800, 400);
+    const protectedRatio = clampNumber(options.protectedRatio, 0.5, 0.82, BARCODE_PROTECTED_RATIO);
+    const artEnabled = options.artEnabled === true && spec.supportsArt === true && Array.isArray(options.artProfile) && options.artProfile.length > 1;
+    const requestedShapeRatio = clampNumber(options.shapeHeightPercent, 18, 46, 36) / 100;
+    const artRatio = artEnabled ? Math.min(requestedShapeRatio, 1 - protectedRatio) : 0;
+    const artHeight = artEnabled ? Math.max(moduleWidth * 6, Math.round(barHeight * artRatio)) : 0;
+    const scanLaneHeight = artEnabled ? Math.max(moduleWidth * 14, barHeight - artHeight) : barHeight;
+    const textSize = clampNumber(options.textSize, 14, 56, Math.max(18, moduleWidth * 5.1));
+    const topPadding = 18;
+    const textGap = Math.max(10, moduleWidth * 3);
+    const totalModules = spec.sequence.reduce((sum, segment) => sum + segment.width, 0);
+    const totalWidth = (totalModules + quietZone * 2) * moduleWidth;
+    const totalHeight = topPadding + barHeight + textGap + textSize + 12;
+    const textY = topPadding + barHeight + textGap + textSize * 0.72;
+    const rects = [];
+    let moduleCursor = 0;
+
+    for (const segment of spec.sequence) {
+      if (segment.isBar) {
+        const heightRatio = segment.heightRatio || 1;
+        const baseHeight = barHeight * heightRatio;
+        const canShape = artEnabled && heightRatio === 1 && segment.noArt !== true;
+        if (canShape) {
+          for (let offset = 0; offset < segment.width; offset += 1) {
+            const absoluteIndex = moduleCursor + offset;
+            const profileValue = sampleBarcodeProfile(options.artProfile, absoluteIndex / Math.max(1, totalModules - 1));
+            const artLift = Math.round(artHeight * profileValue);
+            rects.push({
+              x: (quietZone + absoluteIndex) * moduleWidth,
+              y: topPadding + Math.max(0, artHeight - artLift),
+              width: moduleWidth,
+              height: scanLaneHeight + artLift,
+              fill: BARCODE_INK,
+            });
+          }
+        } else {
+          rects.push({
+            x: (quietZone + moduleCursor) * moduleWidth,
+            y: topPadding + (heightRatio < 1 ? (barHeight - baseHeight) : 0),
+            width: segment.width * moduleWidth,
+            height: heightRatio < 1 ? baseHeight : barHeight,
+            fill: BARCODE_INK,
+          });
+        }
+      }
+      moduleCursor += segment.width;
+    }
+
+    const texts = (spec.textItems && spec.textItems.length ? spec.textItems : [
+      { x: totalWidth / 2, y: textY, anchor: "middle", text: spec.humanText },
+    ]).map((item) => ({
+      x: item.x !== undefined ? item.x : (item.xModules * moduleWidth),
+      y: item.y !== undefined ? item.y : textY,
+      anchor: item.anchor || "middle",
+      size: item.size || textSize,
+      fill: BARCODE_INK,
+      fontFamily,
+      fontWeight,
+      text: item.text,
+    }));
+
+    const model = {
+      width: totalWidth,
+      height: totalHeight,
+      background: "#ffffff",
+      title: spec.title,
+      description: spec.description,
+      rects,
+      paths: [],
+      texts,
+    };
+
+    if (artEnabled && options.artPreset && typeof options.artPreset.decorate === "function") {
+      applyBarcodeArtPreset(model, options.artPreset, {
+        barcodeLeft: quietZone * moduleWidth,
+        barcodeWidth: totalModules * moduleWidth,
+        topPadding,
+        barHeight,
+        artHeight,
+        scanLaneHeight,
+        moduleWidth,
+        totalHeight,
+      });
+    }
+
+    return {
+      svg: renderVectorSvg(model, { includeBackground: true }),
+      model,
+      width: totalWidth,
+      height: totalHeight,
+      meta: {
+        artEnabled,
+        artLabel: artEnabled ? (safeTrim(options.artLabel) || "Custom art") : "Clean barcode",
+        protectedRatio,
+        encoding: spec.encoding || "",
+      },
+    };
+  }
+
+  function createCode39Svg(text, options) {
+    return createSequenceBarcodeSvg({
+      sequence: buildCode39Sequence(text),
+      humanText: text,
+      title: options.artEnabled ? `Code 39 creative barcode ${text}` : `Code 39 barcode ${text}`,
+      description: options.artEnabled ? `Code 39 creative barcode ${text}` : `Code 39 barcode ${text}`,
+      supportsArt: true,
+      encoding: "Code 39",
+    }, options);
+  }
+
+  function createCode128Svg(text, options) {
+    const encoded = buildCode128Sequence(text);
+    return createSequenceBarcodeSvg({
+      sequence: encoded.sequence,
+      humanText: text,
+      title: options.artEnabled ? `Code 128 creative barcode ${text}` : `Code 128 barcode ${text}`,
+      description: options.artEnabled ? `Code 128 creative barcode ${text}` : `Code 128 barcode ${text}`,
+      supportsArt: true,
+      encoding: encoded.encoding,
+    }, options);
+  }
+
+  function createITF14Svg(digits, options) {
+    return createSequenceBarcodeSvg({
+      sequence: buildITF14Sequence(digits),
+      humanText: digits,
+      title: options.artEnabled ? `ITF-14 creative barcode ${digits}` : `ITF-14 barcode ${digits}`,
+      description: options.artEnabled ? `ITF-14 creative barcode ${digits}` : `ITF-14 barcode ${digits}`,
+      supportsArt: true,
+      encoding: "Interleaved 2 of 5",
+    }, options);
+  }
+
+  function createPostnetSvg(analysis, format, options) {
+    return createSequenceBarcodeSvg({
+      sequence: buildPostnetSequence(analysis.normalized),
+      humanText: analysis.normalized,
+      title: `${format.label} barcode ${analysis.normalized}`,
+      description: `${format.label} barcode ${analysis.normalized}`,
+      supportsArt: false,
+      encoding: "POSTNET",
+    }, {
+      ...options,
+      quietZone: Math.max(8, Number(options.quietZone)),
+    });
+  }
+
+  function buildCode39Sequence(text) {
+    const content = `*${text}*`;
+    const sequence = [];
+
+    content.split("").forEach((character, charIndex) => {
+      const pattern = CODE39_PATTERN_MAP[character];
+      pattern.split("").forEach((width, index) => {
+        sequence.push({
+          isBar: index % 2 === 0,
+          width: Number(width),
+        });
+      });
+      if (charIndex < content.length - 1) {
+        sequence.push({ isBar: false, width: 1 });
+      }
+    });
+
+    return sequence;
+  }
+
+  function buildCode128Sequence(text) {
+    const values = [];
+    let activeSet = shouldCode128StartInC(text) ? "C" : "B";
+    values.push(activeSet === "C" ? 105 : 104);
+
+    let index = 0;
+    while (index < text.length) {
+      if (activeSet === "C") {
+        const digitRun = getLeadingDigitRun(text.slice(index));
+        if (digitRun.length >= 2) {
+          values.push(Number(text.slice(index, index + 2)));
+          index += 2;
+          continue;
+        }
+
+        values.push(100);
+        activeSet = "B";
+        continue;
+      }
+
+      const digitRun = getLeadingDigitRun(text.slice(index));
+      const evenDigitRun = digitRun.length - (digitRun.length % 2);
+      if (evenDigitRun >= 4) {
+        values.push(99);
+        activeSet = "C";
+        continue;
+      }
+
+      values.push(text.charCodeAt(index) - 32);
+      index += 1;
+    }
+
+    let checksum = values[0];
+    for (let valueIndex = 1; valueIndex < values.length; valueIndex += 1) {
+      checksum += values[valueIndex] * valueIndex;
+    }
+    values.push(checksum % 103);
+    values.push(106);
+
+    const bitString = values.map((value) => CODE128_PATTERNS[value]).join("");
+    return {
+      sequence: buildSequenceFromBitString(bitString),
+      encoding: values.some((value) => value === 99 || value === 100) ? "Auto Code B / C" : "Code B",
+    };
+  }
+
+  function shouldCode128StartInC(text) {
+    const digitRun = getLeadingDigitRun(text);
+    return digitRun.length >= 2 && digitRun.length % 2 === 0 && (digitRun.length === text.length || digitRun.length >= 4);
+  }
+
+  function getLeadingDigitRun(value) {
+    const match = String(value || "").match(/^\d+/);
+    return match ? match[0] : "";
+  }
+
+  function buildITF14Sequence(digits) {
+    const sequence = [
+      { isBar: true, width: 1, noArt: true },
+      { isBar: false, width: 1 },
+      { isBar: true, width: 1, noArt: true },
+      { isBar: false, width: 1 },
+    ];
+
+    for (let index = 0; index < digits.length; index += 2) {
+      const left = ITF_PATTERNS[digits[index]];
+      const right = ITF_PATTERNS[digits[index + 1]];
+      for (let pairIndex = 0; pairIndex < 5; pairIndex += 1) {
+        sequence.push({
+          isBar: true,
+          width: left[pairIndex] === "1" ? 3 : 1,
+        });
+        sequence.push({
+          isBar: false,
+          width: right[pairIndex] === "1" ? 3 : 1,
+        });
+      }
+    }
+
+    sequence.push({ isBar: true, width: 3, noArt: true });
+    sequence.push({ isBar: false, width: 1 });
+    sequence.push({ isBar: true, width: 1, noArt: true });
+    return sequence;
+  }
+
+  function buildPostnetSequence(digits) {
+    const sequence = [{ isBar: true, width: 1, heightRatio: 1 }];
+    const fullDigits = digits.split("");
+    fullDigits.forEach((digit, digitIndex) => {
+      sequence.push({ isBar: false, width: 1 });
+      POSTNET_PATTERNS[digit].split("").forEach((bit, patternIndex) => {
+        sequence.push({
+          isBar: true,
+          width: 1,
+          heightRatio: bit === "1" ? 1 : 0.46,
+        });
+        if (!(digitIndex === fullDigits.length - 1 && patternIndex === 4)) {
+          sequence.push({ isBar: false, width: 1 });
+        }
+      });
+    });
+    sequence.push({ isBar: true, width: 1, heightRatio: 1 });
+    return sequence;
+  }
+
+  function buildSequenceFromBitString(bitString) {
+    const sequence = [];
+    let current = bitString[0];
+    let width = 1;
+
+    for (let index = 1; index < bitString.length; index += 1) {
+      if (bitString[index] === current) {
+        width += 1;
+        continue;
+      }
+
+      sequence.push({
+        isBar: current === "1",
+        width,
+      });
+      current = bitString[index];
+      width = 1;
+    }
+
+    sequence.push({
+      isBar: current === "1",
+      width,
+    });
+    return sequence;
+  }
+
+  function getActiveBarcodeArtConfig() {
+    const mode = pickBarcodeArtMode(state.barcode.art.mode);
+    if (mode === "upload" && Array.isArray(state.barcode.art.uploadProfile) && state.barcode.art.uploadProfile.length > 1) {
+      return {
+        enabled: true,
+        mode,
+        label: state.barcode.art.uploadName || "Custom SVG art",
+        profile: state.barcode.art.uploadProfile,
+        preset: null,
+      };
+    }
+
+    return {
+      enabled: false,
+      mode: "none",
+      label: "Clean barcode",
+      profile: null,
+      preset: null,
+    };
+  }
+
+  function getBarcodeShapeProfile(shapeLike, sampleCount) {
+    if (Array.isArray(shapeLike) && shapeLike.length) {
+      return finalizeBarcodeProfile(shapeLike);
+    }
+
+    const count = Math.max(16, Number(sampleCount) || 32);
+    const cacheKey = `generic:${count}`;
+    if (barcodeArtProfileCache.has(cacheKey)) {
+      return barcodeArtProfileCache.get(cacheKey);
+    }
+
+    const values = [];
+    for (let index = 0; index < count; index += 1) {
+      const x = count === 1 ? 0.5 : index / (count - 1);
+      values.push(clamp01(0.5 + (Math.sin(x * Math.PI * 2.4) * 0.22)));
+    }
+
+    const profile = finalizeBarcodeProfile(values);
+    barcodeArtProfileCache.set(cacheKey, profile);
+    return profile;
+  }
+
+  function renderBarcodeShapePreviewSvg(profile, shape) {
+    const values = Array.isArray(profile) && profile.length ? profile : getBarcodeShapeProfile(null, 32);
+    const model = {
+      width: 72,
+      height: 72,
+      background: "#ffffff",
+      title: "Barcode art preview",
+      description: "Barcode art preview",
+      rects: [],
+      roundRects: [],
+      circles: [],
+      compoundPaths: [],
+      paths: [],
+      texts: [],
+    };
+    const left = 9;
+    const top = 10;
+    const previewWidth = 54;
+    const moduleWidth = previewWidth / BARCODE_ART_PREVIEW_BITS.length;
+    const artHeight = 18;
+    const scanHeight = 24;
+
+    for (let index = 0; index < BARCODE_ART_PREVIEW_BITS.length; index += 1) {
+      if (BARCODE_ART_PREVIEW_BITS[index] !== "1") {
+        continue;
+      }
+      const lift = artHeight * sampleBarcodeProfile(values, index / Math.max(1, BARCODE_ART_PREVIEW_BITS.length - 1));
+      pushRect(
+        model,
+        left + index * moduleWidth,
+        top + Math.max(0, artHeight - lift),
+        moduleWidth,
+        scanHeight + lift,
+        BARCODE_INK,
+      );
+    }
+
+    if (shape && typeof shape.decorate === "function") {
+      applyBarcodeArtPreset(model, shape, {
+        barcodeLeft: left,
+        barcodeWidth: previewWidth,
+        topPadding: top,
+        barHeight: artHeight + scanHeight,
+        artHeight,
+        scanLaneHeight: scanHeight,
+        moduleWidth,
+        totalHeight: model.height,
+      });
+    }
+
+    return renderVectorSvg(model, { includeBackground: true }).replace("<svg ", '<svg class="barcode-shape-preview" ');
+  }
+
+  function sampleBarcodeProfile(profile, t) {
+    if (!Array.isArray(profile) || !profile.length) {
+      return 0;
+    }
+    const safeT = clamp01(t);
+    const scaledIndex = safeT * (profile.length - 1);
+    const leftIndex = Math.floor(scaledIndex);
+    const rightIndex = Math.min(profile.length - 1, leftIndex + 1);
+    const mixAmount = scaledIndex - leftIndex;
+    return mix(profile[leftIndex], profile[rightIndex], mixAmount);
+  }
+
+  async function createBarcodeProfileFromSvg(svgMarkup, sampleCount) {
+    const normalized = safeTrim(svgMarkup);
+    if (!/<svg[\s>]/i.test(normalized)) {
+      throw new Error("Upload a real SVG silhouette file.");
+    }
+
+    const blob = new Blob([normalized], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+
+    try {
+      const image = await loadImage(url);
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = 420;
+      tempCanvas.height = 240;
+      const tempContext = tempCanvas.getContext("2d");
+      if (!tempContext) {
+        throw new Error("Canvas could not be initialized for the SVG silhouette.");
+      }
+
+      tempContext.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+      tempContext.drawImage(image, 0, 0, tempCanvas.width, tempCanvas.height);
+      const bounds = findAlphaBounds(tempContext, tempCanvas.width, tempCanvas.height);
+      if (!bounds) {
+        throw new Error("The SVG needs visible filled artwork to shape the barcode.");
+      }
+
+      const finalCanvas = document.createElement("canvas");
+      finalCanvas.width = Math.max(48, Number(sampleCount) || 220);
+      finalCanvas.height = 120;
+      const finalContext = finalCanvas.getContext("2d");
+      if (!finalContext) {
+        throw new Error("Canvas could not be initialized for the final silhouette.");
+      }
+
+      finalContext.clearRect(0, 0, finalCanvas.width, finalCanvas.height);
+      const padding = 8;
+      const availableWidth = finalCanvas.width - padding * 2;
+      const availableHeight = finalCanvas.height - padding * 2;
+      const scale = Math.min(availableWidth / bounds.width, availableHeight / bounds.height);
+      const drawWidth = bounds.width * scale;
+      const drawHeight = bounds.height * scale;
+      const drawX = (finalCanvas.width - drawWidth) / 2;
+      const drawY = finalCanvas.height - padding - drawHeight;
+      finalContext.drawImage(
+        tempCanvas,
+        bounds.x,
+        bounds.y,
+        bounds.width,
+        bounds.height,
+        drawX,
+        drawY,
+        drawWidth,
+        drawHeight,
+      );
+
+      const imageData = finalContext.getImageData(0, 0, finalCanvas.width, finalCanvas.height).data;
+      const values = [];
+      for (let x = 0; x < finalCanvas.width; x += 1) {
+        let topY = finalCanvas.height;
+        for (let y = 0; y < finalCanvas.height; y += 1) {
+          const alpha = imageData[(y * finalCanvas.width + x) * 4 + 3];
+          if (alpha > 10) {
+            topY = y;
+            break;
+          }
+        }
+        values.push(topY === finalCanvas.height ? 0 : clamp01((finalCanvas.height - topY) / finalCanvas.height));
+      }
+
+      const profile = finalizeBarcodeProfile(values);
+      if (!profile.some((value) => value > 0.06)) {
+        throw new Error("The SVG silhouette was too empty to shape the barcode.");
+      }
+      return profile;
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  function loadImage(url) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("The SVG file could not be decoded."));
+      image.src = url;
+    });
+  }
+
+  function findAlphaBounds(context, width, height) {
+    const data = context.getImageData(0, 0, width, height).data;
+    let minX = width;
+    let minY = height;
+    let maxX = -1;
+    let maxY = -1;
+
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const alpha = data[(y * width + x) * 4 + 3];
+        if (alpha <= 10) {
+          continue;
+        }
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+    }
+
+    if (maxX < minX || maxY < minY) {
+      return null;
+    }
+
+    return {
+      x: minX,
+      y: minY,
+      width: maxX - minX + 1,
+      height: maxY - minY + 1,
+    };
+  }
+
+  function finalizeBarcodeProfile(values) {
+    let next = Array.isArray(values) ? values.slice() : [];
+    for (let pass = 0; pass < 2; pass += 1) {
+      next = next.map((value, index) => {
+        const left = next[Math.max(0, index - 1)];
+        const right = next[Math.min(next.length - 1, index + 1)];
+        return clamp01((left + value * 2 + right) / 4);
+      });
+    }
+    return next;
+  }
+
+  function mix(left, right, amount) {
+    return left + (right - left) * amount;
+  }
+
+  function clamp01(value) {
+    return Math.max(0, Math.min(1, Number(value) || 0));
+  }
+
+  function gaussian(x, center, width) {
+    const safeWidth = Math.max(0.01, width);
+    const distance = (x - center) / safeWidth;
+    return Math.exp(-0.5 * distance * distance);
+  }
+
+  function archProfile(x, center, halfWidth, exponent) {
+    const safeWidth = Math.max(0.02, halfWidth);
+    const normalized = Math.abs((x - center) / safeWidth);
+    if (normalized >= 1) {
+      return 0;
+    }
+    return Math.pow(1 - normalized, Math.max(0.2, exponent));
+  }
+
+  function buildLeafArtProfile(x, variant) {
+    const center = 0.5 + variant.shift * 0.5;
+    const body = archProfile(x, center, 0.5 * variant.width, 0.55 * variant.sharpen + 0.35);
+    const notch = gaussian(x, center, 0.08 * variant.width) * 0.16;
+    return 0.12 + body * 0.86 * variant.height - notch + Math.sin((x + variant.shift) * Math.PI * 2.2) * variant.wobble + variant.lift;
+  }
+
+  function buildFlowerArtProfile(x, variant, variantIndex) {
+    const petals = 4 + (variantIndex % 3);
+    const envelope = archProfile(x, 0.5 + variant.shift * 0.4, 0.46 * variant.width, 0.72);
+    const wave = Math.pow((Math.cos((x + variant.shift * 0.8) * Math.PI * petals * 2) + 1) / 2, 1.2);
+    return 0.18 + envelope * (0.3 + wave * 0.46 * variant.height) + variant.lift;
+  }
+
+  function buildTreeArtProfile(x, variant) {
+    const canopy = Math.max(
+      gaussian(x, 0.28 + variant.shift * 0.6, 0.12 * variant.width),
+      gaussian(x, 0.5 + variant.shift * 0.2, 0.18 * variant.width),
+      gaussian(x, 0.72 - variant.shift * 0.2, 0.12 * variant.width),
+    );
+    const crown = gaussian(x, 0.5 + variant.shift * 0.2, 0.08 * variant.width) * 0.22;
+    return 0.12 + (canopy * 0.7 + crown) * variant.height + variant.lift;
+  }
+
+  function buildMountainArtProfile(x, variant) {
+    const peakA = archProfile(x, 0.24 + variant.shift, 0.18 * variant.width, 1.8 * variant.sharpen + 0.4) * 0.68;
+    const peakB = archProfile(x, 0.5 + variant.shift * 0.2, 0.26 * variant.width, 1.45 * variant.sharpen + 0.35) * 0.96;
+    const peakC = archProfile(x, 0.8 - variant.shift * 0.3, 0.18 * variant.width, 1.9 * variant.sharpen + 0.45) * 0.62;
+    return 0.08 + Math.max(peakA, peakB, peakC) * variant.height + variant.lift;
+  }
+
+  function buildWaveArtProfile(x, variant) {
+    const rolling = 0.24 + (Math.sin((x + 0.06 + variant.shift) * Math.PI * 1.65) + 1) * 0.15;
+    const crest = gaussian(x, 0.7 + variant.shift * 0.4, 0.11 * variant.width) * 0.24;
+    return (rolling + crest + Math.sin((x + variant.shift) * Math.PI * 4) * variant.wobble + variant.lift) * variant.height;
+  }
+
+  function buildCloudArtProfile(x, variant) {
+    const cloud = Math.max(
+      gaussian(x, 0.2 + variant.shift * 0.4, 0.1 * variant.width) * 0.7,
+      gaussian(x, 0.4 + variant.shift * 0.2, 0.14 * variant.width) * 0.95,
+      gaussian(x, 0.62 - variant.shift * 0.2, 0.14 * variant.width) * 0.85,
+      gaussian(x, 0.8 - variant.shift * 0.3, 0.1 * variant.width) * 0.62,
+    );
+    return 0.16 + cloud * 0.8 * variant.height + variant.lift;
+  }
+
+  function buildCatArtProfile(x, variant) {
+    const face = gaussian(x, 0.5 + variant.shift * 0.2, 0.27 * variant.width) * 0.48;
+    const earLeft = archProfile(x, 0.28 + variant.shift, 0.12 * variant.width, 2.3 * variant.sharpen + 0.55) * 0.84;
+    const earRight = archProfile(x, 0.72 + variant.shift, 0.12 * variant.width, 2.3 * variant.sharpen + 0.55) * 0.84;
+    return 0.1 + Math.max(face + 0.08, earLeft, earRight) * variant.height + variant.lift;
+  }
+
+  function buildBirdArtProfile(x, variant) {
+    const wing = archProfile(x, 0.46 + variant.shift * 0.2, 0.36 * variant.width, 0.72 * variant.sharpen + 0.4) * 0.68;
+    const head = gaussian(x, 0.75 + variant.shift * 0.15, 0.11 * variant.width) * 0.42;
+    const tail = archProfile(x, 0.16 + variant.shift * 0.6, 0.1 * variant.width, 2.2) * 0.24;
+    const beak = archProfile(x, 0.88 + variant.shift * 0.2, 0.07 * variant.width, 2.4) * 0.16;
+    return 0.1 + Math.max(wing, head + beak, tail + 0.08) * variant.height + variant.lift;
+  }
+
+  function buildFishArtProfile(x, variant) {
+    const body = archProfile(x, 0.54 + variant.shift * 0.1, 0.34 * variant.width, 0.76) * 0.7;
+    const tail = archProfile(x, 0.14 + variant.shift * 0.7, 0.12 * variant.width, 1.85 * variant.sharpen + 0.55) * 0.54;
+    const dorsal = gaussian(x, 0.46 + variant.shift * 0.1, 0.08 * variant.width) * 0.22;
+    return 0.1 + Math.max(body + dorsal, tail + 0.1) * variant.height + variant.lift;
+  }
+
+  function buildButterflyArtProfile(x, variant) {
+    const leftUpper = gaussian(x, 0.25 + variant.shift * 0.4, 0.11 * variant.width) * 0.82;
+    const leftLower = gaussian(x, 0.39 + variant.shift * 0.3, 0.08 * variant.width) * 0.46;
+    const rightUpper = gaussian(x, 0.75 + variant.shift * 0.4, 0.11 * variant.width) * 0.82;
+    const rightLower = gaussian(x, 0.61 + variant.shift * 0.3, 0.08 * variant.width) * 0.46;
+    const notch = gaussian(x, 0.5 + variant.shift * 0.2, 0.05) * 0.18;
+    return 0.08 + (Math.max(leftUpper, leftLower, rightUpper, rightLower) - notch + 0.12) * variant.height + variant.lift;
+  }
+
+  function buildFoxArtProfile(x, variant) {
+    const face = archProfile(x, 0.48 + variant.shift * 0.15, 0.28 * variant.width, 0.85 * variant.sharpen + 0.45) * 0.5;
+    const earLeft = archProfile(x, 0.26 + variant.shift, 0.13 * variant.width, 2.7 * variant.sharpen + 0.35) * 0.86;
+    const earRight = archProfile(x, 0.66 + variant.shift * 0.6, 0.13 * variant.width, 2.7 * variant.sharpen + 0.35) * 0.82;
+    const snout = archProfile(x, 0.82 + variant.shift * 0.2, 0.12 * variant.width, 1.5 * variant.sharpen + 0.5) * 0.34;
+    return 0.1 + Math.max(face, earLeft, earRight, snout) * variant.height + variant.lift;
+  }
+
+  function buildWhaleArtProfile(x, variant) {
+    const body = archProfile(x, 0.5 + variant.shift * 0.1, 0.42 * variant.width, 0.74) * 0.66;
+    const tail = archProfile(x, 0.12 + variant.shift * 0.5, 0.1 * variant.width, 2.1 * variant.sharpen + 0.45) * 0.32;
+    const spout = gaussian(x, 0.7 + variant.shift * 0.08, 0.028 * variant.width) * 0.2;
+    const back = gaussian(x, 0.58 + variant.shift * 0.12, 0.14 * variant.width) * 0.18;
+    return 0.1 + (Math.max(body + back, tail + 0.08) + spout + variant.lift) * variant.height;
+  }
+
+  function buildAppleArtProfile(x, variant) {
+    const left = gaussian(x, 0.38 + variant.shift * 0.25, 0.18 * variant.width) * 0.62;
+    const right = gaussian(x, 0.62 + variant.shift * 0.25, 0.18 * variant.width) * 0.62;
+    const notch = gaussian(x, 0.5 + variant.shift * 0.12, 0.055 * variant.width) * 0.18;
+    const stem = gaussian(x, 0.54 + variant.shift * 0.1, 0.03 * variant.width) * 0.18;
+    return 0.12 + (Math.max(left, right) + stem - notch + 0.1) * variant.height + variant.lift;
+  }
+
+  function buildStrawberryArtProfile(x, variant) {
+    const body = archProfile(x, 0.5 + variant.shift * 0.1, 0.4 * variant.width, 0.85 * variant.sharpen + 0.35) * 0.66;
+    const shoulders = Math.max(
+      gaussian(x, 0.34 + variant.shift * 0.2, 0.11 * variant.width),
+      gaussian(x, 0.66 + variant.shift * 0.2, 0.11 * variant.width),
+    ) * 0.22;
+    const crown = Math.cos((x + variant.shift) * Math.PI * 5) * 0.04;
+    return 0.1 + (body + shoulders + crown + variant.lift) * variant.height;
+  }
+
+  function buildPearArtProfile(x, variant) {
+    const upper = gaussian(x, 0.52 + variant.shift * 0.1, 0.12 * variant.width) * 0.34;
+    const lower = gaussian(x, 0.5 + variant.shift * 0.08, 0.24 * variant.width) * 0.62;
+    const neck = gaussian(x, 0.52 + variant.shift * 0.08, 0.06 * variant.width) * 0.16;
+    return 0.12 + (upper + lower + neck + variant.lift) * variant.height;
+  }
+
+  function buildBottleArtProfile(x, variant) {
+    const neck = gaussian(x, 0.5 + variant.shift * 0.08, 0.055 * variant.width) * 0.82;
+    const shoulders = gaussian(x, 0.5 + variant.shift * 0.05, 0.14 * variant.width) * 0.4;
+    const body = gaussian(x, 0.5, 0.22 * variant.width) * 0.16;
+    return 0.1 + (neck + shoulders + body + variant.lift) * variant.height;
+  }
+
+  function buildHeartArtProfile(x, variant) {
+    const left = gaussian(x, 0.34 + variant.shift * 0.15, 0.14 * variant.width) * 0.64;
+    const right = gaussian(x, 0.66 + variant.shift * 0.15, 0.14 * variant.width) * 0.64;
+    const notch = gaussian(x, 0.5 + variant.shift * 0.08, 0.05 * variant.width) * 0.28;
+    const center = gaussian(x, 0.5 + variant.shift * 0.08, 0.2 * variant.width) * 0.18;
+    return 0.1 + (Math.max(left, right) + center - notch + variant.lift) * variant.height;
+  }
+
+  function buildCrownArtProfile(x, variant) {
+    const base = gaussian(x, 0.5 + variant.shift * 0.1, 0.32 * variant.width) * 0.18;
+    const peakLeft = archProfile(x, 0.22 + variant.shift * 0.4, 0.12 * variant.width, 2.6 * variant.sharpen + 0.35) * 0.7;
+    const peakCenter = archProfile(x, 0.5 + variant.shift * 0.1, 0.16 * variant.width, 2.1 * variant.sharpen + 0.35) * 0.84;
+    const peakRight = archProfile(x, 0.78 - variant.shift * 0.15, 0.12 * variant.width, 2.6 * variant.sharpen + 0.35) * 0.7;
+    return 0.08 + (base + Math.max(peakLeft, peakCenter, peakRight) + variant.lift) * variant.height;
+  }
+
+  function buildGiftArtProfile(x, variant) {
+    const box = gaussian(x, 0.5 + variant.shift * 0.08, 0.26 * variant.width) * 0.46;
+    const bowLeft = gaussian(x, 0.4 + variant.shift * 0.16, 0.07 * variant.width) * 0.24;
+    const bowRight = gaussian(x, 0.6 + variant.shift * 0.16, 0.07 * variant.width) * 0.24;
+    const knot = gaussian(x, 0.5 + variant.shift * 0.08, 0.03 * variant.width) * 0.16;
+    return 0.12 + (box + bowLeft + bowRight + knot + variant.lift) * variant.height;
+  }
+
+  function buildFlameArtProfile(x, variant) {
+    const core = archProfile(x, 0.52 + variant.shift * 0.18, 0.18 * variant.width, 1.6 * variant.sharpen + 0.45) * 0.82;
+    const left = archProfile(x, 0.34 + variant.shift * 0.24, 0.14 * variant.width, 1.9 * variant.sharpen + 0.4) * 0.38;
+    const right = archProfile(x, 0.68 + variant.shift * 0.18, 0.12 * variant.width, 2.1 * variant.sharpen + 0.3) * 0.28;
+    return 0.08 + (Math.max(core, left, right) + variant.lift) * variant.height;
+  }
+
+  function createBarcodeArtShape(id, label, category, note, tags, profileBuilder, decorate) {
+    return {
+      id,
+      label,
+      category,
+      categoryLabel: BARCODE_ART_CATEGORY_LABELS[category] || "Scene",
+      note,
+      tags: Array.isArray(tags) ? tags : [],
+      profileBuilder,
+      decorate,
+    };
+  }
+
+  function buildRootedTreeProfile(x) {
+    const canopy = Math.max(
+      gaussian(x, 0.31, 0.12) * 0.55,
+      gaussian(x, 0.5, 0.16) * 0.88,
+      gaussian(x, 0.7, 0.12) * 0.58,
+    );
+    return 0.16 + canopy;
+  }
+
+  function buildForestHillsProfile(x) {
+    return 0.18 + ((Math.sin(x * Math.PI * 2.3 - 0.6) + 1) * 0.12) + gaussian(x, 0.74, 0.12) * 0.14;
+  }
+
+  function buildUmbrellaRainProfile(x) {
+    return 0.16 + archProfile(x, 0.5, 0.34, 0.72) * 0.66;
+  }
+
+  function buildMountainCabinProfile(x) {
+    const peakA = archProfile(x, 0.26, 0.17, 1.9) * 0.58;
+    const peakB = archProfile(x, 0.52, 0.24, 1.6) * 0.88;
+    const peakC = archProfile(x, 0.8, 0.15, 2.1) * 0.5;
+    return 0.12 + Math.max(peakA, peakB, peakC);
+  }
+
+  function buildMeadowArchProfile(x) {
+    return 0.18 + archProfile(x, 0.5, 0.46, 0.74) * 0.54 + gaussian(x, 0.5, 0.18) * 0.1;
+  }
+
+  function buildTunaFishProfile(x) {
+    return 0.18 + archProfile(x, 0.52, 0.38, 0.66) * 0.62 + gaussian(x, 0.46, 0.09) * 0.12;
+  }
+
+  function buildWhaleSplashProfile(x) {
+    return 0.16 + archProfile(x, 0.5, 0.42, 0.7) * 0.56 + gaussian(x, 0.68, 0.08) * 0.14;
+  }
+
+  function buildFishermanLakeProfile(x) {
+    return 0.18 + ((Math.sin(x * Math.PI * 2.5 + 0.2) + 1) * 0.16);
+  }
+
+  function buildOceanSwellProfile(x) {
+    return 0.2 + ((Math.sin(x * Math.PI * 2.1 - 0.1) + 1) * 0.18) + gaussian(x, 0.7, 0.12) * 0.08;
+  }
+
+  function buildHarborBirdsProfile(x) {
+    return 0.16 + ((Math.sin(x * Math.PI * 1.7 + 0.7) + 1) * 0.11) + gaussian(x, 0.28, 0.14) * 0.08;
+  }
+
+  function buildCastleSkylineProfile(x) {
+    const towerA = archProfile(x, 0.18, 0.08, 2.7) * 0.74;
+    const towerB = archProfile(x, 0.38, 0.09, 2.4) * 0.56;
+    const towerC = archProfile(x, 0.55, 0.11, 2.8) * 0.86;
+    const towerD = archProfile(x, 0.76, 0.08, 2.5) * 0.68;
+    return 0.12 + Math.max(towerA, towerB, towerC, towerD);
+  }
+
+  function buildClockTowerProfile(x) {
+    const center = archProfile(x, 0.5, 0.12, 2.9) * 0.86;
+    const wings = Math.max(gaussian(x, 0.28, 0.11), gaussian(x, 0.72, 0.11)) * 0.28;
+    return 0.12 + center + wings;
+  }
+
+  function buildRooflineHomeProfile(x) {
+    const homeA = archProfile(x, 0.32, 0.14, 2.2) * 0.52;
+    const homeB = archProfile(x, 0.54, 0.16, 2.1) * 0.72;
+    const homeC = archProfile(x, 0.78, 0.12, 2.4) * 0.46;
+    return 0.14 + Math.max(homeA, homeB, homeC);
+  }
+
+  function buildCathedralPeakProfile(x) {
+    const middle = archProfile(x, 0.5, 0.16, 3.2) * 0.94;
+    const left = archProfile(x, 0.33, 0.09, 2.7) * 0.48;
+    const right = archProfile(x, 0.67, 0.09, 2.7) * 0.48;
+    return 0.1 + Math.max(middle, left, right);
+  }
+
+  function buildBridgeRailProfile(x) {
+    return 0.2 + gaussian(x, 0.5, 0.32) * 0.16;
+  }
+
+  function buildPizzaSliceProfile(x) {
+    return 0.16 + archProfile(x, 0.56, 0.38, 0.94) * 0.54 + gaussian(x, 0.25, 0.08) * 0.16;
+  }
+
+  function buildCoffeeSteamProfile(x) {
+    return 0.16 + archProfile(x, 0.5, 0.3, 0.9) * 0.38;
+  }
+
+  function buildBottleNeckProfile(x) {
+    return 0.14 + gaussian(x, 0.5, 0.06) * 0.74 + gaussian(x, 0.5, 0.16) * 0.24;
+  }
+
+  function buildHeadphonesArchProfile(x) {
+    return 0.14 + archProfile(x, 0.5, 0.34, 1.02) * 0.58;
+  }
+
+  function buildClapperboardProfile(x) {
+    return 0.14 + archProfile(x, 0.5, 0.45, 1.08) * 0.24 + (1 - x) * 0.18;
+  }
+
+  function applyBarcodeArtPreset(model, preset, layout) {
+    if (!preset || typeof preset.decorate !== "function") {
+      return;
+    }
+    preset.decorate(createBarcodeArtSceneContext(model, layout));
+  }
+
+  function createBarcodeArtSceneContext(model, layout) {
+    const barcodeLeft = Number(layout.barcodeLeft) || 0;
+    const barcodeWidth = Math.max(1, Number(layout.barcodeWidth) || 1);
+    const topPadding = Number(layout.topPadding) || 0;
+    const barHeight = Math.max(1, Number(layout.barHeight) || 1);
+    const artHeight = Math.max(0, Number(layout.artHeight) || 0);
+    const unit = Math.min(barcodeWidth, barHeight);
+    return {
+      model,
+      ink: BARCODE_INK,
+      unit(value) {
+        return unit * value;
+      },
+      x(nx) {
+        return barcodeLeft + barcodeWidth * nx;
+      },
+      y(ny) {
+        return topPadding + barHeight * ny;
+      },
+      move(nx, ny) {
+        return { op: "M", x: this.x(nx), y: this.y(ny) };
+      },
+      line(nx, ny) {
+        return { op: "L", x: this.x(nx), y: this.y(ny) };
+      },
+      curve(x1, y1, x2, y2, x, y) {
+        return {
+          op: "C",
+          x1: this.x(x1),
+          y1: this.y(y1),
+          x2: this.x(x2),
+          y2: this.y(y2),
+          x: this.x(x),
+          y: this.y(y),
+        };
+      },
+      close() {
+        return { op: "Z" };
+      },
+      addFill(commands) {
+        pushPath(model, commands, { fill: BARCODE_INK });
+      },
+      addStroke(commands, strokeWidth) {
+        pushPath(model, commands, {
+          stroke: BARCODE_INK,
+          strokeWidth,
+          lineCap: "round",
+          lineJoin: "round",
+        });
+      },
+      addRect(nx, ny, nw, nh) {
+        pushRect(model, this.x(nx), this.y(ny), barcodeWidth * nw, barHeight * nh, BARCODE_INK);
+      },
+      addRoundRect(nx, ny, nw, nh, rr) {
+        pushRoundRect(
+          model,
+          this.x(nx),
+          this.y(ny),
+          barcodeWidth * nw,
+          barHeight * nh,
+          Math.min(barcodeWidth * nw, barHeight * nh) * rr,
+          BARCODE_INK,
+        );
+      },
+      addCircle(nx, ny, r) {
+        pushCircle(model, this.x(nx), this.y(ny), unit * r, BARCODE_INK);
+      },
+      addBird(nx, ny, span, rise, strokeWidth) {
+        this.addStroke([
+          this.move(nx - span, ny),
+          this.curve(nx - span * 0.58, ny - rise, nx - span * 0.2, ny - rise, nx, ny),
+          this.curve(nx + span * 0.2, ny - rise, nx + span * 0.58, ny - rise, nx + span, ny),
+        ], strokeWidth);
+      },
+      addFishMark(nx, ny, scale) {
+        this.addFill([
+          this.move(nx - scale, ny),
+          this.line(nx, ny - scale * 0.44),
+          this.line(nx + scale * 0.62, ny),
+          this.line(nx, ny + scale * 0.44),
+          this.close(),
+        ]);
+      },
+      artHeightRatio() {
+        return artHeight / barHeight;
+      },
+    };
+  }
+
+  function decorateRootedTree(ctx) {
+    ctx.addStroke([ctx.move(0.5, 0.34), ctx.curve(0.5, 0.24, 0.5, 0.13, 0.5, 0.04)], ctx.unit(0.042));
+    ctx.addStroke([ctx.move(0.49, 0.12), ctx.curve(0.44, 0.08, 0.38, 0.05, 0.28, 0.05)], ctx.unit(0.016));
+    ctx.addStroke([ctx.move(0.5, 0.1), ctx.curve(0.56, 0.06, 0.65, 0.05, 0.75, 0.09)], ctx.unit(0.016));
+    ctx.addStroke([ctx.move(0.44, 0.16), ctx.curve(0.38, 0.11, 0.32, 0.08, 0.22, 0.1)], ctx.unit(0.012));
+    ctx.addStroke([ctx.move(0.56, 0.16), ctx.curve(0.63, 0.1, 0.72, 0.1, 0.82, 0.13)], ctx.unit(0.012));
+    ctx.addCircle(0.24, 0.08, 0.012);
+    ctx.addCircle(0.35, 0.05, 0.01);
+    ctx.addCircle(0.67, 0.05, 0.011);
+    ctx.addCircle(0.79, 0.11, 0.012);
+  }
+
+  function decorateForestHills(ctx) {
+    ctx.addBird(0.28, 0.09, 0.035, 0.03, ctx.unit(0.008));
+    ctx.addBird(0.77, 0.12, 0.032, 0.028, ctx.unit(0.008));
+    ctx.addStroke([ctx.move(0.08, 0.22), ctx.curve(0.22, 0.16, 0.34, 0.18, 0.48, 0.21), ctx.curve(0.62, 0.24, 0.72, 0.19, 0.92, 0.2)], ctx.unit(0.01));
+    ctx.addRect(0.2, 0.18, 0.012, 0.08);
+    ctx.addRect(0.45, 0.17, 0.012, 0.09);
+    ctx.addRect(0.69, 0.18, 0.012, 0.08);
+  }
+
+  function decorateUmbrellaRain(ctx) {
+    ctx.addFill([ctx.move(0.24, 0.26), ctx.curve(0.32, 0.11, 0.68, 0.11, 0.76, 0.26), ctx.line(0.24, 0.26), ctx.close()]);
+    ctx.addStroke([ctx.move(0.5, 0.26), ctx.line(0.5, 0.46), ctx.curve(0.5, 0.54, 0.58, 0.57, 0.63, 0.52)], ctx.unit(0.016));
+    [0.32, 0.42, 0.58, 0.68].forEach((x) => {
+      ctx.addStroke([ctx.move(x, 0.04), ctx.line(x - 0.01, 0.12)], ctx.unit(0.008));
+    });
+  }
+
+  function decorateMountainCabin(ctx) {
+    ctx.addFill([ctx.move(0.18, 0.24), ctx.line(0.28, 0.08), ctx.line(0.39, 0.24), ctx.close()]);
+    ctx.addFill([ctx.move(0.34, 0.3), ctx.line(0.52, 0.04), ctx.line(0.71, 0.3), ctx.close()]);
+    ctx.addRoundRect(0.47, 0.33, 0.1, 0.11, 0.12);
+    ctx.addFill([ctx.move(0.45, 0.33), ctx.line(0.52, 0.26), ctx.line(0.59, 0.33), ctx.close()]);
+  }
+
+  function decorateMeadowArch(ctx) {
+    ctx.addStroke([ctx.move(0.18, 0.22), ctx.curve(0.2, 0.12, 0.23, 0.08, 0.24, 0.02)], ctx.unit(0.01));
+    ctx.addStroke([ctx.move(0.24, 0.02), ctx.curve(0.22, 0.05, 0.2, 0.08, 0.18, 0.1)], ctx.unit(0.008));
+    ctx.addStroke([ctx.move(0.24, 0.02), ctx.curve(0.27, 0.05, 0.29, 0.08, 0.3, 0.1)], ctx.unit(0.008));
+    ctx.addStroke([ctx.move(0.77, 0.22), ctx.curve(0.74, 0.12, 0.71, 0.08, 0.7, 0.02)], ctx.unit(0.01));
+    ctx.addStroke([ctx.move(0.7, 0.02), ctx.curve(0.68, 0.05, 0.66, 0.08, 0.64, 0.1)], ctx.unit(0.008));
+    ctx.addStroke([ctx.move(0.7, 0.02), ctx.curve(0.73, 0.05, 0.75, 0.08, 0.76, 0.1)], ctx.unit(0.008));
+  }
+
+  function decorateTunaFish(ctx) {
+    ctx.addFill([ctx.move(0.04, 0.42), ctx.curve(0.01, 0.46, 0.01, 0.54, 0.05, 0.58), ctx.line(0.12, 0.5), ctx.close()]);
+    ctx.addFill([ctx.move(0.88, 0.42), ctx.line(0.98, 0.34), ctx.line(0.93, 0.5), ctx.line(0.98, 0.66), ctx.line(0.88, 0.58), ctx.close()]);
+    ctx.addFill([ctx.move(0.42, 0.18), ctx.line(0.5, 0.04), ctx.line(0.59, 0.18), ctx.close()]);
+    ctx.addStroke([ctx.move(0.08, 0.48), ctx.curve(0.11, 0.46, 0.14, 0.46, 0.17, 0.48)], ctx.unit(0.008));
+  }
+
+  function decorateWhaleSplash(ctx) {
+    ctx.addFill([ctx.move(0.18, 0.28), ctx.curve(0.34, 0.16, 0.62, 0.18, 0.8, 0.26), ctx.line(0.83, 0.21), ctx.line(0.89, 0.3), ctx.line(0.78, 0.34), ctx.curve(0.58, 0.3, 0.34, 0.32, 0.18, 0.28), ctx.close()]);
+    ctx.addStroke([ctx.move(0.66, 0.13), ctx.curve(0.67, 0.05, 0.7, 0.02, 0.72, -0.02)], ctx.unit(0.01));
+    ctx.addStroke([ctx.move(0.69, 0.13), ctx.curve(0.72, 0.05, 0.75, 0.01, 0.78, -0.01)], ctx.unit(0.008));
+  }
+
+  function decorateFishermanLake(ctx) {
+    ctx.addFill([ctx.move(0.56, 0.22), ctx.line(0.73, 0.22), ctx.line(0.66, 0.28), ctx.line(0.52, 0.28), ctx.close()]);
+    ctx.addStroke([ctx.move(0.63, 0.21), ctx.line(0.63, 0.12), ctx.line(0.66, 0.08)], ctx.unit(0.011));
+    ctx.addStroke([ctx.move(0.66, 0.08), ctx.curve(0.73, 0.04, 0.84, 0.03, 0.92, 0.18)], ctx.unit(0.01));
+    ctx.addBird(0.22, 0.09, 0.03, 0.025, ctx.unit(0.007));
+    ctx.addFishMark(0.42, 0.54, 0.028);
+    ctx.addFishMark(0.75, 0.5, 0.026);
+  }
+
+  function decorateOceanSwell(ctx) {
+    ctx.addBird(0.26, 0.08, 0.034, 0.03, ctx.unit(0.008));
+    ctx.addBird(0.7, 0.1, 0.03, 0.024, ctx.unit(0.007));
+    ctx.addFishMark(0.3, 0.5, 0.024);
+    ctx.addFishMark(0.56, 0.58, 0.028);
+    ctx.addFishMark(0.82, 0.48, 0.022);
+  }
+
+  function decorateHarborBirds(ctx) {
+    ctx.addStroke([ctx.move(0.08, 0.26), ctx.curve(0.24, 0.22, 0.38, 0.21, 0.58, 0.24), ctx.curve(0.72, 0.26, 0.82, 0.24, 0.92, 0.22)], ctx.unit(0.01));
+    ctx.addBird(0.38, 0.08, 0.03, 0.026, ctx.unit(0.007));
+    ctx.addBird(0.58, 0.11, 0.026, 0.022, ctx.unit(0.007));
+    ctx.addBird(0.79, 0.09, 0.03, 0.026, ctx.unit(0.007));
+  }
+
+  function decorateCastleSkyline(ctx) {
+    ctx.addFill([ctx.move(0.12, 0.28), ctx.line(0.12, 0.14), ctx.line(0.16, 0.14), ctx.line(0.16, 0.06), ctx.line(0.2, 0.14), ctx.line(0.24, 0.06), ctx.line(0.24, 0.14), ctx.line(0.3, 0.14), ctx.line(0.3, 0.24), ctx.line(0.4, 0.24), ctx.line(0.4, 0.08), ctx.line(0.45, 0.08), ctx.line(0.45, 0), ctx.line(0.5, 0.08), ctx.line(0.56, 0.08), ctx.line(0.56, 0.18), ctx.line(0.64, 0.18), ctx.line(0.64, 0.08), ctx.line(0.68, 0.08), ctx.line(0.68, 0.02), ctx.line(0.72, 0.08), ctx.line(0.78, 0.08), ctx.line(0.78, 0.26), ctx.line(0.88, 0.26), ctx.line(0.88, 0.28), ctx.close()]);
+  }
+
+  function decorateClockTower(ctx) {
+    ctx.addFill([ctx.move(0.4, 0.3), ctx.line(0.44, 0.3), ctx.line(0.44, 0.1), ctx.line(0.5, 0), ctx.line(0.56, 0.1), ctx.line(0.56, 0.3), ctx.line(0.6, 0.3), ctx.line(0.6, 0.34), ctx.line(0.4, 0.34), ctx.close()]);
+    ctx.addRect(0.24, 0.26, 0.12, 0.05);
+    ctx.addRect(0.64, 0.26, 0.12, 0.05);
+  }
+
+  function decorateRooflineHome(ctx) {
+    ctx.addFill([ctx.move(0.16, 0.3), ctx.line(0.24, 0.18), ctx.line(0.34, 0.3), ctx.line(0.4, 0.3), ctx.line(0.5, 0.12), ctx.line(0.62, 0.3), ctx.line(0.69, 0.3), ctx.line(0.78, 0.2), ctx.line(0.86, 0.3), ctx.line(0.86, 0.34), ctx.line(0.16, 0.34), ctx.close()]);
+  }
+
+  function decorateCathedralPeak(ctx) {
+    ctx.addFill([ctx.move(0.28, 0.3), ctx.line(0.34, 0.16), ctx.line(0.39, 0.3), ctx.line(0.45, 0.3), ctx.line(0.5, 0.02), ctx.line(0.55, 0.3), ctx.line(0.61, 0.3), ctx.line(0.66, 0.16), ctx.line(0.72, 0.3), ctx.line(0.72, 0.34), ctx.line(0.28, 0.34), ctx.close()]);
+  }
+
+  function decorateBridgeRail(ctx) {
+    ctx.addRect(0.02, 0.18, 0.96, 0.06);
+    ctx.addFill([ctx.move(0.06, 0.31), ctx.line(0.98, 0.24), ctx.line(0.98, 0.3), ctx.line(0.06, 0.37), ctx.close()]);
+  }
+
+  function decoratePizzaSlice(ctx) {
+    ctx.addFill([ctx.move(0.28, 0.26), ctx.line(0.72, 0.18), ctx.line(0.56, 0.4), ctx.close()]);
+    ctx.addStroke([ctx.move(0.32, 0.24), ctx.curve(0.43, 0.12, 0.6, 0.12, 0.69, 0.19)], ctx.unit(0.015));
+    ctx.addCircle(0.47, 0.29, 0.018);
+    ctx.addCircle(0.57, 0.25, 0.016);
+  }
+
+  function decorateCoffeeSteam(ctx) {
+    ctx.addRoundRect(0.34, 0.31, 0.28, 0.12, 0.28);
+    ctx.addStroke([ctx.move(0.63, 0.35), ctx.curve(0.68, 0.32, 0.7, 0.39, 0.66, 0.42)], ctx.unit(0.012));
+    ctx.addStroke([ctx.move(0.42, 0.24), ctx.curve(0.39, 0.16, 0.47, 0.12, 0.44, 0.03)], ctx.unit(0.01));
+    ctx.addStroke([ctx.move(0.5, 0.23), ctx.curve(0.47, 0.14, 0.55, 0.1, 0.52, 0.01)], ctx.unit(0.01));
+    ctx.addStroke([ctx.move(0.58, 0.24), ctx.curve(0.55, 0.15, 0.63, 0.11, 0.6, 0.02)], ctx.unit(0.01));
+  }
+
+  function decorateBottleNeck(ctx) {
+    ctx.addRoundRect(0.43, 0.02, 0.14, 0.1, 0.2);
+    ctx.addRoundRect(0.39, 0.11, 0.22, 0.12, 0.18);
+  }
+
+  function decorateHeadphonesArch(ctx) {
+    ctx.addStroke([ctx.move(0.22, 0.28), ctx.curve(0.28, 0.08, 0.72, 0.08, 0.78, 0.28)], ctx.unit(0.025));
+    ctx.addRoundRect(0.16, 0.28, 0.08, 0.18, 0.26);
+    ctx.addRoundRect(0.76, 0.28, 0.08, 0.18, 0.26);
+  }
+
+  function decorateClapperboard(ctx) {
+    ctx.addRect(0.08, 0.26, 0.84, 0.06);
+    ctx.addFill([ctx.move(0.08, 0.18), ctx.line(0.86, 0.07), ctx.line(0.9, 0.15), ctx.line(0.12, 0.26), ctx.close()]);
   }
 
   function createQrVectorModel(qr, options) {
@@ -1631,6 +3687,7 @@
       roundRects: [],
       circles: [],
       compoundPaths: [],
+      paths: [],
       texts: [],
     };
 
@@ -1644,6 +3701,7 @@
       darkColor: options.darkColor,
       backgroundColor: options.backgroundColor,
       typeShort: options.typeShort,
+      frameTexts: options.frameTexts,
     });
 
     const logoBadge = options.logo === "none"
@@ -1679,7 +3737,7 @@
     }
 
     if (logoBadge) {
-      addQrLogo(model, logoBadge, options.logo, options.darkColor, options.backgroundColor, options.typeShort);
+      addQrLogo(model, logoBadge, options.logo, options.darkColor, options.backgroundColor, options.logoText || options.typeShort);
     }
 
     return model;
@@ -1709,6 +3767,10 @@
 
     for (const circle of model.circles || []) {
       svg += `<circle cx="${formatNumber(circle.cx)}" cy="${formatNumber(circle.cy)}" r="${formatNumber(circle.r)}" fill="${escapeAttribute(circle.fill)}"/>`;
+    }
+
+    for (const path of model.paths || []) {
+      svg += `<path d="${escapeAttribute(buildSvgCommandPath(path.commands))}"${path.fill ? ` fill="${escapeAttribute(path.fill)}"` : ' fill="none"'}${path.stroke ? ` stroke="${escapeAttribute(path.stroke)}"` : ""}${path.strokeWidth ? ` stroke-width="${formatNumber(path.strokeWidth)}"` : ""}${path.lineCap ? ` stroke-linecap="${escapeAttribute(path.lineCap)}"` : ""}${path.lineJoin ? ` stroke-linejoin="${escapeAttribute(path.lineJoin)}"` : ""}/>`;
     }
 
     for (const compoundPath of model.compoundPaths || []) {
@@ -1743,6 +3805,7 @@
 
   function handleQrStyleInput() {
     syncQrStyleFromForm();
+    renderQrDesignControls();
     generateQr(false);
   }
 
@@ -1784,8 +3847,9 @@
   function renderDesignButtonMarkup(options, activeId, group, previewRenderer) {
     return options.map((option) => {
       const activeClass = option.id === activeId ? " active" : "";
+      const groupClass = group === "logo" ? " design-option-logo" : (group === "frame" ? " design-option-frame" : "");
       return `
-        <button class="design-option${activeClass}" type="button" data-design-group="${group}" data-design-value="${option.id}">
+        <button class="design-option${groupClass}${activeClass}" type="button" data-design-group="${group}" data-design-value="${option.id}">
           ${previewRenderer(option.id)}
           <span class="design-option-label">${escapeHtml(option.label)}</span>
           <span class="design-option-note">${escapeHtml(option.note || "")}</span>
@@ -1900,21 +3964,61 @@
   function renderLogoPreview(optionId) {
     const color = escapeAttribute(state.qr.style.darkColor);
     const background = escapeAttribute(state.qr.style.backgroundColor);
+    const scanLines = wrapLabelText(safeTrim(state.qr.style.logoText) || "SCAN ME", 7, 2);
+    const typeLines = wrapLabelText(safeTrim(state.qr.style.logoText) || "TEXT", 5, 2);
+    const previewScanText = renderPreviewCenteredTextMarkup(
+      scanLines.join(" ").trim() || "SCAN ME",
+      16,
+      16,
+      40,
+      color,
+      {
+        baseFontSize: 12,
+        minFontSize: 9.5,
+        maxCharsPerLine: 7,
+        maxLines: 2,
+        minWidth: 24,
+        minHeight: 24,
+        paddingX: 0,
+        paddingY: 0,
+        lineGap: 2.5,
+      },
+    );
+    const previewTypeText = renderPreviewCenteredTextMarkup(
+      typeLines.join(" ").trim() || "TEXT",
+      16,
+      16,
+      40,
+      color,
+      {
+        baseFontSize: 12,
+        minFontSize: 9.5,
+        maxCharsPerLine: 6,
+        maxLines: 2,
+        minWidth: 24,
+        minHeight: 24,
+        paddingX: 0,
+        paddingY: 0,
+        lineGap: 2.5,
+      },
+    );
     const previews = {
       none: `
         <rect x="10" y="10" width="52" height="52" rx="14" fill="${background}" stroke="${color}" stroke-width="4"/>
         <line x1="18" y1="18" x2="54" y2="54" stroke="${color}" stroke-width="5"/>
       `,
       globe: `
-        <circle cx="36" cy="36" r="20" fill="${color}"/>
-        <circle cx="36" cy="36" r="14" fill="${background}"/>
-        <rect x="34" y="18" width="4" height="36" rx="2" fill="${color}"/>
-        <rect x="18" y="34" width="36" height="4" rx="2" fill="${color}"/>
+        <rect x="12" y="12" width="48" height="48" rx="14" fill="${color}"/>
+        <rect x="16" y="16" width="40" height="40" rx="12" fill="${background}"/>
+        <circle cx="36" cy="36" r="14.4" fill="none" stroke="${color}" stroke-width="4"/>
+        <ellipse cx="36" cy="36" rx="6.8" ry="14.4" fill="none" stroke="${color}" stroke-width="2.8"/>
+        <ellipse cx="36" cy="36" rx="12" ry="5.4" fill="none" stroke="${color}" stroke-width="2.8"/>
+        <rect x="22.4" y="34.6" width="27.2" height="2.8" rx="1.4" fill="${color}"/>
       `,
       scan: `
-        <rect x="14" y="14" width="44" height="44" rx="12" fill="${color}"/>
-        <rect x="18" y="18" width="36" height="36" rx="10" fill="${background}"/>
-        <text x="36" y="40" text-anchor="middle" font-size="10" font-weight="700" fill="${color}">SCAN</text>
+        <rect x="12" y="12" width="48" height="48" rx="14" fill="${color}"/>
+        <rect x="16" y="16" width="40" height="40" rx="12" fill="${background}"/>
+        ${previewScanText}
       `,
       focus: `
         <rect x="18" y="18" width="8" height="24" rx="3" fill="${color}"/>
@@ -1927,9 +4031,9 @@
         <rect x="30" y="46" width="24" height="8" rx="3" fill="${color}"/>
       `,
       type: `
-        <rect x="14" y="14" width="44" height="44" rx="12" fill="${color}"/>
-        <rect x="18" y="18" width="36" height="36" rx="10" fill="${background}"/>
-        <text x="36" y="42" text-anchor="middle" font-size="14" font-weight="700" fill="${color}">QR</text>
+        <rect x="12" y="12" width="48" height="48" rx="14" fill="${color}"/>
+        <rect x="16" y="16" width="40" height="40" rx="12" fill="${background}"/>
+        ${previewTypeText}
       `,
     };
     return `<svg class="design-preview" viewBox="0 0 72 72" aria-hidden="true">${previews[optionId] || previews.none}</svg>`;
@@ -1938,6 +4042,22 @@
   function validateRequiredQrValues(type, values) {
     const missing = type.fields.find((field) => field.required && !safeTrim(values[field.key]));
     return missing ? `${missing.label} is required for this QR type.` : "";
+  }
+
+  function validateWifi(values) {
+    const security = safeTrim(values.security) || "WPA";
+    if (security !== "nopass" && !safeTrim(values.password)) {
+      return "Add the WiFi password for the selected security type.";
+    }
+    if (security === "WPA2-EAP") {
+      if (!safeTrim(values.eap)) {
+        return "Add the EAP method for WPA2-EAP WiFi.";
+      }
+      if (!safeTrim(values.identity)) {
+        return "Add the identity / username for WPA2-EAP WiFi.";
+      }
+    }
+    return "";
   }
 
   function resolveQrErrorCorrection() {
@@ -1956,23 +4076,127 @@
       row >= origin.row && row < origin.row + 7 && column >= origin.column && column < origin.column + 7);
   }
 
+  function normalizeInlineLabel(text, fallback, limit) {
+    const normalized = String(text || "").replace(/\s+/g, " ").trim();
+    return normalized.slice(0, limit || 42) || fallback;
+  }
+
+  function wrapLabelText(text, maxCharsPerLine, maxLines) {
+    const normalized = normalizeInlineLabel(text, "", maxCharsPerLine * maxLines);
+    if (!normalized) {
+      return [];
+    }
+
+    const words = normalized.split(" ").filter(Boolean);
+    const lines = [];
+    let current = "";
+
+    for (const rawWord of words) {
+      let word = rawWord;
+
+      while (word.length > maxCharsPerLine) {
+        if (current) {
+          lines.push(current);
+          current = "";
+          if (lines.length >= maxLines) {
+            return lines.slice(0, maxLines);
+          }
+        }
+
+        lines.push(word.slice(0, maxCharsPerLine));
+        word = word.slice(maxCharsPerLine);
+        if (lines.length >= maxLines) {
+          return lines.slice(0, maxLines);
+        }
+      }
+
+      if (!word) {
+        continue;
+      }
+
+      if (!current) {
+        current = word;
+        continue;
+      }
+
+      const next = `${current} ${word}`;
+      if (next.length <= maxCharsPerLine) {
+        current = next;
+        continue;
+      }
+
+      lines.push(current);
+      current = word;
+      if (lines.length >= maxLines - 1) {
+        break;
+      }
+    }
+
+    if (current && lines.length < maxLines) {
+      lines.push(current);
+    }
+
+    return lines.length ? lines.slice(0, maxLines) : [normalized.slice(0, maxCharsPerLine)];
+  }
+
+  function estimateVectorTextWidth(text, fontSize) {
+    return String(text || "").length * fontSize * 0.58;
+  }
+
+  function createLabelLayout(text, maxWidth, config) {
+    const lines = wrapLabelText(text, config.maxCharsPerLine, config.maxLines || 2);
+    let fontSize = config.baseFontSize;
+    const minFontSize = config.minFontSize || 10;
+    const paddingX = config.paddingX || 18;
+    const paddingY = config.paddingY || 10;
+    const lineGap = config.lineGap || 3;
+    let widest = Math.max(...lines.map((line) => estimateVectorTextWidth(line, fontSize)), config.minWidth || 0);
+
+    while (widest > maxWidth - paddingX * 2 && fontSize > minFontSize) {
+      fontSize -= 0.5;
+      widest = Math.max(...lines.map((line) => estimateVectorTextWidth(line, fontSize)), config.minWidth || 0);
+    }
+
+    const lineHeight = fontSize * 1.08;
+    const textBlockHeight = lineHeight * lines.length + lineGap * Math.max(0, lines.length - 1);
+    const width = Math.min(maxWidth, Math.max(config.minWidth || 116, widest + paddingX * 2));
+    const height = Math.max(config.minHeight || 34, textBlockHeight + paddingY * 2);
+    const startY = (height - textBlockHeight) / 2 + fontSize * 0.82;
+    const lineYs = lines.map((_line, index) => startY + index * (lineHeight + lineGap));
+    return { lines, fontSize, width, height, lineYs };
+  }
+
+  function drawCenteredLabel(model, centerX, topY, layout, fill) {
+    layout.lines.forEach((line, index) => {
+      pushText(model, centerX, topY + layout.lineYs[index], line, layout.fontSize, fill, "middle");
+    });
+  }
+
+  function renderPreviewCenteredTextMarkup(text, x, y, size, fill, config) {
+    const layout = createLabelLayout(text, size * 0.96, config);
+    const topY = y + (size - layout.height) / 2;
+    return layout.lines.map((line, index) => (
+      `<text x="${formatNumber(x + size / 2)}" y="${formatNumber(topY + layout.lineYs[index])}" text-anchor="middle" font-size="${formatNumber(layout.fontSize)}" font-family="Arial, Helvetica, sans-serif" font-weight="800" fill="${fill}">${escapeHtml(line)}</text>`
+    )).join("");
+  }
+
   function getQrFrameInsets(frame, cellSize) {
     switch (frame) {
       case "scan-bottom":
-        return { top: 0, bottom: Math.max(42, cellSize * 5.5) };
+        return { top: 0, bottom: Math.max(68, cellSize * 8) };
       case "scan-top-bottom":
-        return { top: Math.max(38, cellSize * 5), bottom: Math.max(42, cellSize * 5.5) };
+        return { top: Math.max(62, cellSize * 7.8), bottom: Math.max(68, cellSize * 8) };
       case "ticket":
-        return { top: Math.max(34, cellSize * 4.5), bottom: Math.max(24, cellSize * 3.5) };
+        return { top: Math.max(60, cellSize * 7.2), bottom: Math.max(34, cellSize * 4.4) };
       case "badge":
-        return { top: 0, bottom: Math.max(50, cellSize * 6) };
+        return { top: 0, bottom: Math.max(74, cellSize * 8.5) };
       default:
         return { top: 0, bottom: 0 };
     }
   }
 
   function createLogoBadge(qrOriginX, qrOriginY, qrSize, cellSize, darkColor, backgroundColor) {
-    const size = Math.max(cellSize * 6, Math.min(qrSize * 0.22, cellSize * 10));
+    const size = Math.max(cellSize * 7.2, Math.min(qrSize * 0.28, cellSize * 11.5));
     const border = Math.max(2, size * 0.08);
     return {
       x: qrOriginX + (qrSize - size) / 2,
@@ -2045,26 +4269,49 @@
       return;
     }
 
-    const pillWidth = Math.min(model.width - options.margin * 1.3, Math.max(112, options.qrSize * 0.54));
-    const pillHeight = Math.max(30, options.cellSize * 3.1);
-    const pillX = (model.width - pillWidth) / 2;
+    const frameTexts = options.frameTexts || { top: `${options.typeShort} QR`, bottom: "SCAN ME" };
+    const maxPillWidth = model.width - options.margin * 0.85;
 
     if (options.frame === "scan-bottom" || options.frame === "badge") {
-      const fill = options.darkColor;
       const y = options.qrOriginY + options.qrSize + options.cellSize * 1.35;
-      const height = options.frame === "badge" ? pillHeight + options.cellSize * 0.5 : pillHeight;
-      pushRoundRect(model, pillX, y, pillWidth, height, height / 2, fill);
-      pushText(model, model.width / 2, y + height * 0.66, "SCAN ME", Math.max(13, height * 0.34), "#ffffff", "middle");
+      const layout = createLabelLayout(frameTexts.bottom, maxPillWidth, {
+        baseFontSize: Math.max(14, options.cellSize * 1.72),
+        minFontSize: 11,
+        maxCharsPerLine: options.frame === "badge" ? 11 : 14,
+        minWidth: Math.max(128, options.qrSize * 0.56),
+        minHeight: options.frame === "badge" ? Math.max(48, options.cellSize * 4.7) : Math.max(38, options.cellSize * 3.8),
+        paddingX: options.frame === "badge" ? 22 : 18,
+        paddingY: options.frame === "badge" ? 12 : 10,
+      });
+      const pillX = (model.width - layout.width) / 2;
+      pushRoundRect(model, pillX, y, layout.width, layout.height, layout.height / 2, options.darkColor);
+      drawCenteredLabel(model, model.width / 2, y, layout, "#ffffff");
       return;
     }
 
     if (options.frame === "scan-top-bottom") {
+      const topLayout = createLabelLayout(frameTexts.top, maxPillWidth, {
+        baseFontSize: Math.max(13, options.cellSize * 1.58),
+        minFontSize: 10.5,
+        maxCharsPerLine: 12,
+        minWidth: Math.max(118, options.qrSize * 0.5),
+        minHeight: Math.max(36, options.cellSize * 3.6),
+      });
       const topY = options.cellSize * 0.9;
-      pushRoundRect(model, pillX, topY, pillWidth, pillHeight, pillHeight / 2, options.darkColor);
-      pushText(model, model.width / 2, topY + pillHeight * 0.66, `${options.typeShort} QR`, Math.max(12, pillHeight * 0.34), "#ffffff", "middle");
+      const topX = (model.width - topLayout.width) / 2;
+      pushRoundRect(model, topX, topY, topLayout.width, topLayout.height, topLayout.height / 2, options.darkColor);
+      drawCenteredLabel(model, model.width / 2, topY, topLayout, "#ffffff");
       const bottomY = options.qrOriginY + options.qrSize + options.cellSize * 1.3;
-      pushRoundRect(model, pillX, bottomY, pillWidth, pillHeight, pillHeight / 2, options.darkColor);
-      pushText(model, model.width / 2, bottomY + pillHeight * 0.66, "SCAN ME", Math.max(12, pillHeight * 0.34), "#ffffff", "middle");
+      const bottomLayout = createLabelLayout(frameTexts.bottom, maxPillWidth, {
+        baseFontSize: Math.max(14, options.cellSize * 1.66),
+        minFontSize: 11,
+        maxCharsPerLine: 14,
+        minWidth: Math.max(128, options.qrSize * 0.56),
+        minHeight: Math.max(38, options.cellSize * 3.8),
+      });
+      const bottomX = (model.width - bottomLayout.width) / 2;
+      pushRoundRect(model, bottomX, bottomY, bottomLayout.width, bottomLayout.height, bottomLayout.height / 2, options.darkColor);
+      drawCenteredLabel(model, model.width / 2, bottomY, bottomLayout, "#ffffff");
       return;
     }
 
@@ -2092,12 +4339,20 @@
         },
       ], options.darkColor);
       const topY = options.cellSize * 0.95;
-      pushRoundRect(model, pillX, topY, pillWidth, pillHeight, pillHeight / 2, options.darkColor);
-      pushText(model, model.width / 2, topY + pillHeight * 0.66, `${options.typeShort} QR`, Math.max(12, pillHeight * 0.34), "#ffffff", "middle");
+      const topLayout = createLabelLayout(frameTexts.top, maxPillWidth, {
+        baseFontSize: Math.max(13, options.cellSize * 1.58),
+        minFontSize: 10.5,
+        maxCharsPerLine: 12,
+        minWidth: Math.max(118, options.qrSize * 0.5),
+        minHeight: Math.max(36, options.cellSize * 3.6),
+      });
+      const topX = (model.width - topLayout.width) / 2;
+      pushRoundRect(model, topX, topY, topLayout.width, topLayout.height, topLayout.height / 2, options.darkColor);
+      drawCenteredLabel(model, model.width / 2, topY, topLayout, "#ffffff");
     }
   }
 
-  function addQrLogo(model, badge, logo, darkColor, backgroundColor, typeShort) {
+  function addQrLogo(model, badge, logo, darkColor, backgroundColor, logoText) {
     pushCompoundPath(model, [
       {
         type: "roundRect",
@@ -2121,18 +4376,28 @@
     const centerY = badge.y + badge.size / 2;
     const innerSize = badge.size - badge.border * 2;
     if (logo === "globe") {
-      pushCompoundPath(model, [
-        { type: "circle", cx: centerX, cy: centerY, r: innerSize * 0.19 },
-        { type: "circle", cx: centerX, cy: centerY, r: innerSize * 0.14 },
-      ], darkColor);
-      pushRoundRect(model, centerX - innerSize * 0.03, centerY - innerSize * 0.19, innerSize * 0.06, innerSize * 0.38, innerSize * 0.03, darkColor);
-      pushRoundRect(model, centerX - innerSize * 0.19, centerY - innerSize * 0.03, innerSize * 0.38, innerSize * 0.06, innerSize * 0.03, darkColor);
+      const outerStroke = Math.max(2.4, innerSize * 0.1);
+      const innerStroke = Math.max(1.8, innerSize * 0.07);
+      pushCircleStroke(model, centerX, centerY, innerSize * 0.36, darkColor, outerStroke);
+      pushEllipseStroke(model, centerX, centerY, innerSize * 0.17, innerSize * 0.36, darkColor, innerStroke);
+      pushEllipseStroke(model, centerX, centerY, innerSize * 0.3, innerSize * 0.135, darkColor, innerStroke);
+      pushRoundRect(model, centerX - innerSize * 0.34, centerY - innerStroke / 2, innerSize * 0.68, innerStroke, innerStroke / 2, darkColor);
       return;
     }
 
     if (logo === "scan") {
-      pushText(model, centerX, centerY + innerSize * 0.07, "SCAN", Math.max(10, innerSize * 0.18), darkColor, "middle");
-      pushText(model, centerX, centerY + innerSize * 0.25, "ME", Math.max(10, innerSize * 0.18), darkColor, "middle");
+      const layout = createLabelLayout(logoText, innerSize * 0.96, {
+        baseFontSize: Math.max(13.5, innerSize * 0.28),
+        minFontSize: 11,
+        maxCharsPerLine: 7,
+        maxLines: 2,
+        minWidth: innerSize * 0.74,
+        minHeight: innerSize * 0.62,
+        paddingX: 0,
+        paddingY: 0,
+        lineGap: 2.5,
+      });
+      drawCenteredLabel(model, centerX, centerY - layout.height / 2, layout, darkColor);
       return;
     }
 
@@ -2151,7 +4416,18 @@
     }
 
     if (logo === "type") {
-      pushText(model, centerX, centerY + innerSize * 0.08, typeShort, Math.max(14, innerSize * 0.26), darkColor, "middle");
+      const layout = createLabelLayout(logoText, innerSize * 0.94, {
+        baseFontSize: Math.max(13.5, innerSize * 0.27),
+        minFontSize: 10.5,
+        maxCharsPerLine: 6,
+        maxLines: 2,
+        minWidth: innerSize * 0.72,
+        minHeight: innerSize * 0.6,
+        paddingX: 0,
+        paddingY: 0,
+        lineGap: 2.5,
+      });
+      drawCenteredLabel(model, centerX, centerY - layout.height / 2, layout, darkColor);
     }
   }
 
@@ -2171,6 +4447,35 @@
     model.circles.push({ cx, cy, r, fill });
   }
 
+  function pushCircleStroke(model, cx, cy, r, stroke, strokeWidth) {
+    pushPath(model, buildEllipseCommands(cx, cy, r, r), {
+      stroke,
+      strokeWidth,
+      lineCap: "round",
+      lineJoin: "round",
+    });
+  }
+
+  function pushEllipseStroke(model, cx, cy, rx, ry, stroke, strokeWidth) {
+    pushPath(model, buildEllipseCommands(cx, cy, rx, ry), {
+      stroke,
+      strokeWidth,
+      lineCap: "round",
+      lineJoin: "round",
+    });
+  }
+
+  function pushPath(model, commands, style) {
+    model.paths.push({
+      commands,
+      fill: style && style.fill ? style.fill : "",
+      stroke: style && style.stroke ? style.stroke : "",
+      strokeWidth: style && style.strokeWidth ? style.strokeWidth : 0,
+      lineCap: style && style.lineCap ? style.lineCap : "round",
+      lineJoin: style && style.lineJoin ? style.lineJoin : "round",
+    });
+  }
+
   function pushCompoundPath(model, paths, fill) {
     model.compoundPaths.push({ paths, fill });
   }
@@ -2186,6 +4491,20 @@
       fontFamily: BARCODE_FONT_FAMILY,
       fontWeight: "700",
     });
+  }
+
+  function buildEllipseCommands(cx, cy, rx, ry) {
+    const k = 0.5522847498;
+    const ox = rx * k;
+    const oy = ry * k;
+    return [
+      { op: "M", x: cx + rx, y: cy },
+      { op: "C", x1: cx + rx, y1: cy + oy, x2: cx + ox, y2: cy + ry, x: cx, y: cy + ry },
+      { op: "C", x1: cx - ox, y1: cy + ry, x2: cx - rx, y2: cy + oy, x: cx - rx, y: cy },
+      { op: "C", x1: cx - rx, y1: cy - oy, x2: cx - ox, y2: cy - ry, x: cx, y: cy - ry },
+      { op: "C", x1: cx + ox, y1: cy - ry, x2: cx + rx, y2: cy - oy, x: cx + rx, y: cy },
+      { op: "Z" },
+    ];
   }
 
   function buildEAN13BitString(digits) {
@@ -2207,6 +4526,27 @@
     return bits;
   }
 
+  function buildEAN8BitString(digits) {
+    let bits = "101";
+
+    for (let index = 0; index < 4; index += 1) {
+      bits += EAN13_PATTERNS.L[digits[index]];
+    }
+
+    bits += "01010";
+
+    for (let index = 4; index < 8; index += 1) {
+      bits += EAN13_PATTERNS.R[digits[index]];
+    }
+
+    bits += "101";
+    return bits;
+  }
+
+  function buildUPCABitString(digits) {
+    return buildEAN13BitString(`0${digits}`);
+  }
+
   function recolorQrSvg(svg, darkColor) {
     return svg
       .replace('fill="white"', 'fill="#ffffff"')
@@ -2221,24 +4561,28 @@
     return safeTrim(state.barcode.fontFamily) || "Arial";
   }
 
+  function ensureBarcodeFontSelection(fontFamily) {
+    const family = safeTrim(fontFamily) || BARCODE_FONT_FAMILY;
+    const existing = Array.from(refs.barcodeFontFamily.options || []).some((option) => option.value === family);
+    if (!existing) {
+      refs.barcodeFontFamily.insertAdjacentHTML("beforeend", `<option value="${escapeAttribute(family)}">${escapeHtml(family)}</option>`);
+    }
+    refs.barcodeFontFamily.value = family;
+  }
+
   function applyBarcodeFontSuggestions(fontFamilies) {
+    const selectedFamily = safeTrim(state.barcode.fontFamily) || BARCODE_FONT_FAMILY;
     const uniqueFamilies = Array.from(new Set(
       (fontFamilies || [])
+        .concat(selectedFamily)
         .map((family) => safeTrim(family))
         .filter(Boolean),
     )).sort((left, right) => left.localeCompare(right, undefined, { sensitivity: "base" }));
 
-    refs.barcodeFontFamilyList.innerHTML = uniqueFamilies
-      .map((family) => `<option value="${escapeAttribute(family)}"></option>`)
+    refs.barcodeFontFamily.innerHTML = uniqueFamilies
+      .map((family) => `<option value="${escapeAttribute(family)}">${escapeHtml(family)}</option>`)
       .join("");
-  }
-
-  function refreshBarcodeFontSuggestions() {
-    applyBarcodeFontSuggestions([
-      ...BARCODE_FONT_SUGGESTIONS,
-      ...packagedFontFamilies,
-      ...installedFontFamilies,
-    ]);
+    ensureBarcodeFontSelection(selectedFamily);
   }
 
   function setBarcodeFontAccessStatus(message, tone) {
@@ -2249,106 +4593,14 @@
     }
   }
 
-  async function primeBarcodeFontSources() {
-    refreshBarcodeFontSuggestions();
-    await loadPackagedBarcodeFonts();
-    await primeInstalledFontsIfPossible();
-  }
-
-  async function loadPackagedBarcodeFonts() {
-    if (!window.fetch || window.location.protocol === "file:") {
-      setBarcodeFontAccessStatus("Fonts from the web folder work after you put this site online. The button can still try this PC font list.", "");
-      return;
-    }
-
-    try {
-      const response = await fetch(WEB_FONT_MANIFEST_PATH, { cache: "no-store" });
-      if (!response.ok) {
-        setBarcodeFontAccessStatus("No folder fonts loaded yet. Add .ttf or .otf files to /fonts and list them in manifest.json.", "");
-        return;
-      }
-
-      const manifest = await response.json();
-      const entries = Array.isArray(manifest.fonts)
-        ? manifest.fonts.map(normalizePackagedFontEntry).filter(Boolean)
-        : [];
-
-      if (!entries.length) {
-        setBarcodeFontAccessStatus("Folder fonts are ready to use. Add .ttf or .otf files in /fonts and list them in manifest.json.", "");
-        return;
-      }
-
-      installPackagedFontFaces(entries);
-      packagedFontFamilies = entries.map((entry) => entry.family);
-      refreshBarcodeFontSuggestions();
-      setBarcodeFontAccessStatus(`Loaded ${packagedFontFamilies.length} folder font${packagedFontFamilies.length === 1 ? "" : "s"}. Use the button if you also want fonts from this PC.`, "ready");
-    } catch (error) {
-      setBarcodeFontAccessStatus("The site could not read /fonts/manifest.json right now. The current PC font button still works where the browser allows it.", "warn");
-    }
-  }
-
-  function normalizePackagedFontEntry(entry) {
-    if (!entry || typeof entry !== "object") {
-      return null;
-    }
-
-    const family = safeTrim(entry.family);
-    const file = safeTrim(entry.file);
-    if (!family || !file) {
-      return null;
-    }
-
-    return {
-      family,
-      file,
-      weight: clampNumber(entry.weight, 100, 900, 400),
-      style: safeTrim(entry.style).toLowerCase() === "italic" ? "italic" : "normal",
-    };
-  }
-
-  function getFontFormat(fileName) {
-    const lower = safeTrim(fileName).toLowerCase();
-    if (lower.endsWith(".woff2")) return "woff2";
-    if (lower.endsWith(".woff")) return "woff";
-    if (lower.endsWith(".otf")) return "opentype";
-    return "truetype";
-  }
-
-  function installPackagedFontFaces(entries) {
-    const existing = document.getElementById("packagedBarcodeFontsStyle");
-    if (existing) {
-      existing.remove();
-    }
-
-    const style = document.createElement("style");
-    style.id = "packagedBarcodeFontsStyle";
-    style.textContent = entries.map((entry) => {
-      const encodedFile = entry.file
-        .split("/")
-        .map((part) => encodeURIComponent(part))
-        .join("/");
-      return `
-@font-face {
-  font-family: "${entry.family.replace(/"/g, '\\"')}";
-  src: url("./fonts/${encodedFile}") format("${getFontFormat(entry.file)}");
-  font-weight: ${entry.weight};
-  font-style: ${entry.style};
-  font-display: swap;
-}
-      `.trim();
-    }).join("\n\n");
-    document.head.appendChild(style);
-  }
-
   async function primeInstalledFontsIfPossible() {
+    applyBarcodeFontSuggestions(BARCODE_FONT_SUGGESTIONS);
     if (installedFontsLoaded || installedFontsLoading) {
       return;
     }
 
     if (typeof window.queryLocalFonts !== "function") {
-      if (!packagedFontFamilies.length) {
-        setBarcodeFontAccessStatus("This browser cannot list installed fonts automatically. You can still type any font name or use folder fonts online.", "warn");
-      }
+      setBarcodeFontAccessStatus("This browser cannot list installed fonts automatically. The regular font list still works.", "warn");
       return;
     }
 
@@ -2368,15 +4620,11 @@
     }
 
     if (permissionState === "denied") {
-      setBarcodeFontAccessStatus(packagedFontFamilies.length
-        ? "Folder fonts are ready. This browser blocked installed-font access for this PC."
-        : "Font access is blocked in this browser, so type the font name manually or use folder fonts online.", "warn");
+      setBarcodeFontAccessStatus("Font access is blocked in this browser, so the dropdown stays on the regular font list.", "warn");
       return;
     }
 
-    if (!packagedFontFamilies.length) {
-      setBarcodeFontAccessStatus("Folder fonts load from /fonts online. Click the button to list the fonts installed on this PC too.", "");
-    }
+    setBarcodeFontAccessStatus("Click \"Load installed fonts\" to replace the list with the fonts installed on this PC.", "");
   }
 
   async function loadInstalledBarcodeFonts(userRequested) {
@@ -2385,48 +4633,42 @@
     }
 
     if (typeof window.queryLocalFonts !== "function") {
-      setBarcodeFontAccessStatus("This browser cannot list installed fonts automatically. You can still type any font name.", "warn");
+      setBarcodeFontAccessStatus("This browser cannot list installed fonts automatically. The regular font list still works.", "warn");
       return;
     }
 
     installedFontsLoading = true;
-    const idleLabel = "Load this PC fonts";
+    const idleLabel = "Load installed fonts";
     refs.loadInstalledFontsButton.disabled = true;
     refs.loadInstalledFontsButton.textContent = "Loading fonts...";
     setBarcodeFontAccessStatus("Reading installed fonts from this PC...", "");
 
     try {
       const localFonts = await window.queryLocalFonts();
-      installedFontFamilies = Array.from(new Set(
+      const families = Array.from(new Set(
         localFonts
           .map((entry) => safeTrim(entry.family))
           .filter(Boolean),
       )).sort((left, right) => left.localeCompare(right, undefined, { sensitivity: "base" }));
 
-      if (!installedFontFamilies.length) {
+      if (!families.length) {
         setBarcodeFontAccessStatus("No installed font families were returned by this browser.", "warn");
         return;
       }
 
-      refreshBarcodeFontSuggestions();
+      applyBarcodeFontSuggestions(families);
       installedFontsLoaded = true;
-      setBarcodeFontAccessStatus(`Loaded ${installedFontFamilies.length} font families from this PC.${packagedFontFamilies.length ? ` Folder fonts loaded too: ${packagedFontFamilies.length}.` : ""}`, "ready");
+      setBarcodeFontAccessStatus(`Loaded ${families.length} font families from this PC.`, "ready");
     } catch (error) {
       const errorName = error instanceof Error ? error.name : "";
       if (errorName === "NotAllowedError") {
-        setBarcodeFontAccessStatus(packagedFontFamilies.length
-          ? "Installed-font access was denied. Your folder fonts still work."
-          : "Font access was denied. Click again if you want to try the browser permission prompt once more.", "warn");
+        setBarcodeFontAccessStatus("Font access was denied. Click again if you want to try the browser permission prompt once more.", "warn");
       } else if (errorName === "SecurityError") {
-        setBarcodeFontAccessStatus(packagedFontFamilies.length
-          ? "Installed-font access was blocked, but your folder fonts still work."
-          : "This browser blocked local font access. You can still type the font name manually or use folder fonts online.", "warn");
+        setBarcodeFontAccessStatus("This browser blocked local font access for this file. The regular font list stays available.", "warn");
       } else if (userRequested) {
-        setBarcodeFontAccessStatus(packagedFontFamilies.length
-          ? "The browser could not read this PC font list right now, but your folder fonts still work."
-          : "The browser could not read installed fonts right now. You can still type the font name manually.", "warn");
+        setBarcodeFontAccessStatus("The browser could not read installed fonts right now. The regular font list stays available.", "warn");
       } else {
-        setBarcodeFontAccessStatus("Click \"Load this PC fonts\" to try reading the fonts installed on this PC.", "");
+        setBarcodeFontAccessStatus("Click \"Load installed fonts\" to try reading the fonts installed on this PC.", "");
       }
     } finally {
       installedFontsLoading = false;
@@ -2473,15 +4715,18 @@
     if (values.company) lines.push(`ORG:${escapeVCard(values.company)}`);
     if (values.title) lines.push(`TITLE:${escapeVCard(values.title)}`);
     if (values.mobile) lines.push(`TEL;TYPE=CELL:${normalizePhone(values.mobile)}`);
+    if (values.phone) lines.push(`TEL;TYPE=VOICE:${normalizePhone(values.phone)}`);
     if (values.workPhone) lines.push(`TEL;TYPE=WORK:${normalizePhone(values.workPhone)}`);
+    if (values.fax) lines.push(`TEL;TYPE=FAX:${normalizePhone(values.fax)}`);
     if (values.email) lines.push(`EMAIL:${safeTrim(values.email)}`);
     if (values.website) lines.push(`URL:${normalizeHttpUrl(values.website)}`);
 
+    const address = [values.address || values.street, values.city, values.state, values.zip, values.country].map((value) => escapeVCard(value || ""));
+    if (address.some(Boolean)) {
+      lines.push(`ADR;TYPE=WORK:;;${address[0]};${address[1]};${address[2]};${address[3]};${address[4]}`);
+    }
+
     if (extended) {
-      const address = [values.address, values.city, values.zip, values.country].map(escapeVCard);
-      if (address.some(Boolean)) {
-        lines.push(`ADR;TYPE=WORK:;;${address[0]};${address[1]};;${address[2]};${address[3]}`);
-      }
       if (values.birthday) lines.push(`BDAY:${values.birthday}`);
       if (values.notes) lines.push(`NOTE:${escapeVCard(values.notes)}`);
     }
@@ -2517,10 +4762,33 @@
       throw new Error("A WiFi QR needs an SSID.");
     }
 
-    const security = values.security || "WPA";
+    const security = safeTrim(values.security) || "WPA";
     const hidden = values.hidden === true || values.hidden === "true";
-    const password = security === "nopass" ? "" : escapeWifi(values.password || "");
-    return `WIFI:T:${security};S:${escapeWifi(ssid)};${password ? `P:${password};` : ""}${hidden ? "H:true;" : ""};`;
+    const segments = [
+      `T:${security}`,
+      `S:${formatWifiPayloadValue(ssid)}`,
+    ];
+
+    if (security !== "nopass") {
+      const password = safeTrim(values.password || "");
+      if (!password) {
+        throw new Error("This WiFi QR needs a password for the selected security type.");
+      }
+      segments.push(`P:${formatWifiPayloadValue(password)}`);
+    }
+
+    if (hidden) {
+      segments.push("H:true");
+    }
+
+    if (security === "WPA2-EAP") {
+      if (values.eap) segments.push(`E:${escapeWifi(values.eap)}`);
+      if (values.anonymousIdentity) segments.push(`A:${escapeWifi(values.anonymousIdentity)}`);
+      if (values.identity) segments.push(`I:${escapeWifi(values.identity)}`);
+      if (values.phase2) segments.push(`PH2:${escapeWifi(values.phase2)}`);
+    }
+
+    return `WIFI:${segments.join(";")};;`;
   }
 
   function buildLabeledLinks(title, entries) {
@@ -2711,6 +4979,22 @@
       context.fill();
     }
 
+    for (const path of model.paths || []) {
+      context.beginPath();
+      appendCanvasCommandPath(context, path.commands);
+      if (path.fill) {
+        context.fillStyle = path.fill;
+        context.fill();
+      }
+      if (path.stroke && path.strokeWidth) {
+        context.strokeStyle = path.stroke;
+        context.lineWidth = path.strokeWidth;
+        context.lineCap = path.lineCap || "round";
+        context.lineJoin = path.lineJoin || "round";
+        context.stroke();
+      }
+    }
+
     for (const compoundPath of model.compoundPaths || []) {
       context.fillStyle = compoundPath.fill;
       context.beginPath();
@@ -2756,6 +5040,19 @@
     for (const circle of model.circles || []) {
       const cy = pageHeight - circle.cy;
       streamParts.push(`${pdfColor(circle.fill)} rg ${pdfCirclePath(circle.cx, cy, circle.r)} f`);
+    }
+
+    for (const path of model.paths || []) {
+      const pdfPath = pdfCommandPath(path.commands, pageHeight);
+      const operators = [];
+      if (path.fill) {
+        operators.push(`${pdfColor(path.fill)} rg`);
+      }
+      if (path.stroke && path.strokeWidth) {
+        operators.push(`${pdfColor(path.stroke)} RG`, `${formatNumber(path.strokeWidth)} w`);
+      }
+      const paintOperator = path.fill && path.stroke && path.strokeWidth ? "B" : (path.fill ? "f" : "S");
+      streamParts.push(`${operators.join(" ")} ${pdfPath} ${paintOperator}`);
     }
 
     for (const compoundPath of model.compoundPaths || []) {
@@ -2864,6 +5161,27 @@
     context.closePath();
   }
 
+  function appendCanvasCommandPath(context, commands) {
+    for (const command of commands || []) {
+      switch (command.op) {
+        case "M":
+          context.moveTo(command.x, command.y);
+          break;
+        case "L":
+          context.lineTo(command.x, command.y);
+          break;
+        case "C":
+          context.bezierCurveTo(command.x1, command.y1, command.x2, command.y2, command.x, command.y);
+          break;
+        case "Z":
+          context.closePath();
+          break;
+        default:
+          break;
+      }
+    }
+  }
+
   function pdfRoundRectPath(x, y, width, height, radius) {
     const r = Math.max(0, Math.min(radius, width / 2, height / 2));
     if (!r) {
@@ -2915,8 +5233,42 @@
     );
   }
 
+  function pdfCommandPath(commands, pageHeight) {
+    return (commands || []).map((command) => {
+      switch (command.op) {
+        case "M":
+          return `${formatNumber(command.x)} ${formatNumber(pageHeight - command.y)} m`;
+        case "L":
+          return `${formatNumber(command.x)} ${formatNumber(pageHeight - command.y)} l`;
+        case "C":
+          return `${formatNumber(command.x1)} ${formatNumber(pageHeight - command.y1)} ${formatNumber(command.x2)} ${formatNumber(pageHeight - command.y2)} ${formatNumber(command.x)} ${formatNumber(pageHeight - command.y)} c`;
+        case "Z":
+          return "h";
+        default:
+          return "";
+      }
+    }).join(" ");
+  }
+
   function buildSvgCompoundPath(paths) {
     return paths.map((shape) => svgShapePath(shape)).join(" ");
+  }
+
+  function buildSvgCommandPath(commands) {
+    return (commands || []).map((command) => {
+      switch (command.op) {
+        case "M":
+          return `M ${formatNumber(command.x)} ${formatNumber(command.y)}`;
+        case "L":
+          return `L ${formatNumber(command.x)} ${formatNumber(command.y)}`;
+        case "C":
+          return `C ${formatNumber(command.x1)} ${formatNumber(command.y1)} ${formatNumber(command.x2)} ${formatNumber(command.y2)} ${formatNumber(command.x)} ${formatNumber(command.y)}`;
+        case "Z":
+          return "Z";
+        default:
+          return "";
+      }
+    }).join(" ");
   }
 
   function svgShapePath(shape) {
@@ -3047,6 +5399,8 @@
       activeMode: "qr",
       theme: "light",
       barcode: {
+        group: "ean-upc",
+        format: "ean13",
         digits: "3812345678908",
         label: "barcode-item",
         moduleWidth: 3,
@@ -3055,6 +5409,13 @@
         textSize: 28,
         fontFamily: BARCODE_FONT_FAMILY,
         fontWeight: 400,
+        art: {
+          mode: "none",
+          shapeHeightPercent: 36,
+          uploadName: "",
+          uploadSvg: "",
+          uploadProfile: null,
+        },
       },
       qr: {
         type: "website",
@@ -3063,7 +5424,10 @@
           shape: "square",
           corner: "square",
           frame: "none",
+          frameTopText: "",
+          frameBottomText: "",
           logo: "none",
+          logoText: "",
           cornerColorMode: "main",
           cornerColor: "#14213d",
           backgroundColor: "#ffffff",
@@ -3186,7 +5550,18 @@
       .replace(/\\/g, "\\\\")
       .replace(/;/g, "\\;")
       .replace(/,/g, "\\,")
+      .replace(/"/g, '\\"')
       .replace(/:/g, "\\:");
+  }
+
+  function formatWifiPayloadValue(value) {
+    const escaped = escapeWifi(value);
+    return looksLikeWifiHexLiteral(value) ? `"${escaped}"` : escaped;
+  }
+
+  function looksLikeWifiHexLiteral(value) {
+    const trimmed = safeTrim(value);
+    return /^[0-9A-F]+$/i.test(trimmed) && trimmed.length >= 4;
   }
 
   function splitLines(value) {
