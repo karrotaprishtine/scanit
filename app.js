@@ -1003,12 +1003,11 @@
       state.barcode = createDefaultState().barcode;
       state.barcode.format = pickBarcodeFormatId(preservedFormat);
       state.barcode.group = getActiveBarcodeFormat().group;
-      state.barcode.digits = getActiveBarcodeFormat().exampleValue;
+      outputs.barcode = null;
       hydrateStaticForms();
       updateBarcodeStatus();
       renderBarcodeArtControls();
       persistState();
-      generateBarcode(false);
       if (state.activeMode === "barcode") {
         renderCurrentModeOutput();
       }
@@ -1077,7 +1076,7 @@
     });
 
     refs.qrResetButton.addEventListener("click", () => {
-      state.qr.values[state.qr.type] = clone(getDefaultValuesForType(state.qr.type));
+      state.qr.values[state.qr.type] = clone(getBlankValuesForType(state.qr.type));
       state.qr.style = clone(createDefaultState().qr.style);
       hydrateStaticForms();
       renderQrDynamicFields();
@@ -1227,15 +1226,15 @@
   function applyBarcodeFormatDefaults(regenerate) {
     const format = getActiveBarcodeFormat();
     state.barcode.group = format.group;
-    state.barcode.digits = format.exampleValue;
-    refs.barcodeDigits.value = format.exampleValue;
+    state.barcode.digits = "";
+    refs.barcodeDigits.value = "";
+    outputs.barcode = null;
     persistState();
     renderBarcodeFormatSelectors();
     renderBarcodeFormatMeta();
     updateBarcodeStatus();
     renderBarcodeArtControls();
     if (regenerate) {
-      generateBarcode(false);
       if (state.activeMode === "barcode") {
         renderCurrentModeOutput();
       }
@@ -1395,7 +1394,7 @@
         return `
           <label class="${fieldClass}">
             <span>${escapeHtml(field.label)}</span>
-            <textarea ${common} placeholder="${escapeHtml(field.placeholder || "")}">${escapeHtml(value || "")}</textarea>
+            <textarea ${common} placeholder="${escapeHtml(resolveQrFieldPlaceholder(field))}">${escapeHtml(value || "")}</textarea>
             ${hint}
           </label>
         `;
@@ -1437,7 +1436,7 @@
             ${common}
             type="${escapeHtml(inputType)}"
             value="${escapeHtml(value || "")}"
-            placeholder="${escapeHtml(field.placeholder || "")}"
+            placeholder="${escapeHtml(resolveQrFieldPlaceholder(field))}"
             autocomplete="off"
             ${inputMode}
           >
@@ -1511,6 +1510,19 @@
       return "SCAN ME";
     }
     return state.qr.style.logo === "type" ? type.short : "";
+  }
+
+  function resolveQrFieldPlaceholder(field) {
+    if (field.placeholder) {
+      return field.placeholder;
+    }
+
+    const example = getQrFieldExampleValue(field);
+    if (example === undefined || example === null || typeof example === "boolean") {
+      return "";
+    }
+
+    return String(example);
   }
 
   function syncBarcodeSettingsFromForm() {
@@ -1768,6 +1780,10 @@
     const format = getActiveBarcodeFormat();
     const analysis = analyzeBarcodeValue(format, refs.barcodeDigits.value);
     if (!analysis.valid) {
+      outputs.barcode = createBarcodeGhostOutput(format, analysis.message);
+      if (state.activeMode === "barcode") {
+        renderOutput(outputs.barcode);
+      }
       if (reportIssues) {
         refs.barcodeDigits.reportValidity();
       }
@@ -1823,6 +1839,53 @@
     return outputs.barcode;
   }
 
+  function createBarcodeGhostOutput(format, message) {
+    const exampleAnalysis = analyzeBarcodeValue(format, format.exampleValue);
+    const safeAnalysis = exampleAnalysis.valid
+      ? exampleAnalysis
+      : {
+          normalized: format.exampleValue,
+          checkDigit: "",
+          statusMessage: "",
+        };
+
+    const svgResult = createBarcodeSvg(format, safeAnalysis, {
+      moduleWidth: state.barcode.moduleWidth,
+      barHeight: state.barcode.barHeight,
+      quietZone: state.barcode.quietZone,
+      textSize: state.barcode.textSize,
+      fontFamily: resolveBarcodeFontFamily(),
+      fontWeight: state.barcode.fontWeight,
+      artProfile: null,
+      artPreset: null,
+      artEnabled: false,
+      artLabel: "Clean barcode",
+      artMode: "none",
+      protectedRatio: BARCODE_PROTECTED_RATIO,
+      shapeHeightPercent: state.barcode.art.shapeHeightPercent,
+      inkColor: "#d6dbe4",
+    });
+
+    return {
+      mode: "barcode",
+      badge: "Preview",
+      previewTitle: `${format.label} barcode preview`,
+      payload: message || "Type your barcode digits and the final value will appear here.",
+      svg: svgResult.svg,
+      model: svgResult.model,
+      width: svgResult.width,
+      height: svgResult.height,
+      fileBase: slugify(`${format.id}-barcode-preview`),
+      placeholder: true,
+      summaryRows: [
+        ["Status", "Soft preview only"],
+        ["Type", format.label],
+        ["Example", format.exampleValue],
+        ["State", message || "Add valid barcode data to activate the final export"],
+      ],
+    };
+  }
+
   function generateQr(reportIssues) {
     syncQrStyleFromForm();
 
@@ -1832,19 +1895,31 @@
 
     const requiredMessage = validateRequiredQrValues(type, values);
     if (requiredMessage) {
+      outputs.qr = createQrGhostOutput(type, values, requiredMessage);
       setStatusStrip(refs.qrStatusStrip, requiredMessage, reportIssues ? "invalid" : "neutral");
+      if (state.activeMode === "qr") {
+        renderOutput(outputs.qr);
+      }
       return null;
     }
 
     if (reportIssues && !refs.qrForm.reportValidity()) {
+      outputs.qr = createQrGhostOutput(type, values, "Please complete the required fields for this QR type.");
       setStatusStrip(refs.qrStatusStrip, "Please complete the required fields for this QR type.", "invalid");
+      if (state.activeMode === "qr") {
+        renderOutput(outputs.qr);
+      }
       return null;
     }
 
     if (typeof type.validate === "function") {
       const validationMessage = type.validate(values);
       if (validationMessage) {
+        outputs.qr = createQrGhostOutput(type, values, validationMessage);
         setStatusStrip(refs.qrStatusStrip, validationMessage, "invalid");
+        if (state.activeMode === "qr") {
+          renderOutput(outputs.qr);
+        }
         return null;
       }
     }
@@ -1863,7 +1938,11 @@
       return output;
     } catch (error) {
       const message = error instanceof Error ? error.message : "The QR code could not be generated.";
+      outputs.qr = createQrGhostOutput(type, values, message);
       setStatusStrip(refs.qrStatusStrip, message, "invalid");
+      if (state.activeMode === "qr") {
+        renderOutput(outputs.qr);
+      }
       return null;
     }
   }
@@ -1918,6 +1997,76 @@
     };
   }
 
+  function createQrGhostOutput(type, values, message) {
+    const placeholderPayload = buildQrPreviewPayload(type, values);
+    const cellSize = state.qr.style.cellSize;
+    const margin = state.qr.style.margin;
+    const previewDark = "#d6dbe4";
+    const previewCorner = "#d6dbe4";
+    const previewBackground = "#ffffff";
+    const qr = window.qrcode(0, "M");
+    qr.addData(placeholderPayload, "Byte");
+    qr.make();
+
+    const model = createQrVectorModel(qr, {
+      darkColor: previewDark,
+      backgroundColor: previewBackground,
+      cornerColor: previewCorner,
+      cellSize,
+      margin,
+      shape: state.qr.style.shape,
+      corner: state.qr.style.corner,
+      frame: state.qr.style.frame,
+      frameTexts: getQrFrameTexts(),
+      logo: state.qr.style.logo,
+      logoText: getQrLogoText(type),
+      typeShort: type.short,
+      title: `${type.label} QR preview`,
+      description: `${type.label} QR preview`,
+    });
+    const svg = renderVectorSvg(model, { includeBackground: true });
+
+    return {
+      mode: "qr",
+      badge: "Preview",
+      previewTitle: `${type.label} QR preview`,
+      payload: message || "Start typing and the final payload will appear here.",
+      svg,
+      model,
+      width: model.width,
+      height: model.height,
+      fileBase: slugify(`${type.id}-qr-preview`),
+      placeholder: true,
+      summaryRows: [
+        ["Status", "Soft preview only"],
+        ["Type", type.label],
+        ["State", message || "Add the required details to activate the final QR"],
+        ["Preview colors", "Light gray guide"],
+      ],
+    };
+  }
+
+  function buildQrPreviewPayload(type, values) {
+    const fallbackValues = clone(getDefaultValuesForType(type.id));
+    const merged = {};
+    for (const field of type.fields) {
+      const current = values ? values[field.key] : undefined;
+      if (field.type === "checkbox") {
+        merged[field.key] = typeof current === "boolean" ? current : Boolean(fallbackValues[field.key]);
+        continue;
+      }
+
+      const normalized = safeTrim(current);
+      merged[field.key] = normalized || fallbackValues[field.key];
+    }
+
+    try {
+      return type.build(merged);
+    } catch (_error) {
+      return `PREVIEW:${type.id}:${type.short}`;
+    }
+  }
+
   function renderCurrentModeOutput() {
     const output = outputs[state.activeMode];
     if (output) {
@@ -1932,16 +2081,32 @@
     refs.previewCanvas.innerHTML = output.svg;
     refs.previewTitle.textContent = output.previewTitle;
     refs.previewBadge.textContent = output.badge;
-    refs.previewBadge.className = `preview-badge ${output.mode}`;
+    refs.previewBadge.className = `preview-badge ${output.mode}${output.placeholder ? " preview" : ""}`;
     refs.payloadText.textContent = output.payload;
-    refs.downloadSvgButton.disabled = false;
-    refs.downloadPdfButton.disabled = false;
-    refs.downloadPngButton.disabled = false;
-    refs.copyPayloadButton.disabled = false;
+    refs.previewCanvas.classList.toggle("is-preview", Boolean(output.placeholder));
+    refs.payloadText.classList.toggle("placeholder", Boolean(output.placeholder));
+    refs.summaryList.classList.toggle("placeholder", Boolean(output.placeholder));
+    refs.downloadSvgButton.disabled = Boolean(output.placeholder);
+    refs.downloadPdfButton.disabled = Boolean(output.placeholder);
+    refs.downloadPngButton.disabled = Boolean(output.placeholder);
+    refs.copyPayloadButton.disabled = Boolean(output.placeholder);
     renderSummary(output.summaryRows);
   }
 
   function renderPreviewPlaceholder() {
+    if (state.activeMode === "qr") {
+      const type = qrTypeMap[state.qr.type];
+      const values = state.qr.values[type.id] || {};
+      renderOutput(createQrGhostOutput(type, values, "Add your details to activate the QR."));
+      return;
+    }
+
+    if (state.activeMode === "barcode") {
+      const format = getActiveBarcodeFormat();
+      renderOutput(createBarcodeGhostOutput(format, `Add your ${format.label} data to activate the barcode.`));
+      return;
+    }
+
     refs.previewCanvas.innerHTML = `
       <div class="preview-placeholder">
         <strong>Nothing generated yet</strong>
@@ -1951,6 +2116,9 @@
     refs.previewTitle.textContent = "Generated code will appear here.";
     refs.previewBadge.textContent = "Ready";
     refs.previewBadge.className = "preview-badge";
+    refs.previewCanvas.classList.remove("is-preview");
+    refs.payloadText.classList.remove("placeholder");
+    refs.summaryList.classList.remove("placeholder");
     refs.payloadText.textContent = "No payload yet.";
     refs.downloadSvgButton.disabled = true;
     refs.downloadPdfButton.disabled = true;
@@ -2451,6 +2619,7 @@
     const quietZone = Number(options.quietZone);
     const fontFamily = safeTrim(options.fontFamily) || BARCODE_FONT_FAMILY;
     const fontWeight = clampNumber(options.fontWeight, 400, 800, 400);
+    const inkColor = normalizeHexColor(options.inkColor, BARCODE_INK);
     const protectedRatio = clampNumber(options.protectedRatio, 0.5, 0.82, BARCODE_PROTECTED_RATIO);
     const artEnabled = options.artEnabled === true && Array.isArray(options.artProfile) && options.artProfile.length > 1;
     const requestedShapeRatio = clampNumber(options.shapeHeightPercent, 18, 46, 36) / 100;
@@ -2479,7 +2648,7 @@
       const artLift = artEnabled && !isGuard ? Math.round(artHeight * profileValue) : artHeight;
       const y = topPadding + Math.max(0, artHeight - artLift);
       const height = (scanLaneHeight + artLift) + (isGuard ? guardExtra : 0);
-      rects.push({ x, y, width: moduleWidth, height, fill: BARCODE_INK });
+      rects.push({ x, y, width: moduleWidth, height, fill: inkColor });
     }
 
     for (const item of spec.textItems) {
@@ -2488,7 +2657,7 @@
         y: textY,
         anchor: item.anchor || "middle",
         size: textSize,
-        fill: BARCODE_INK,
+        fill: inkColor,
         fontFamily,
         fontWeight,
         text: item.text,
@@ -2607,6 +2776,7 @@
     const quietZone = Number(options.quietZone);
     const fontFamily = safeTrim(options.fontFamily) || BARCODE_FONT_FAMILY;
     const fontWeight = clampNumber(options.fontWeight, 400, 800, 400);
+    const inkColor = normalizeHexColor(options.inkColor, BARCODE_INK);
     const protectedRatio = clampNumber(options.protectedRatio, 0.5, 0.82, BARCODE_PROTECTED_RATIO);
     const artEnabled = options.artEnabled === true && spec.supportsArt === true && Array.isArray(options.artProfile) && options.artProfile.length > 1;
     const requestedShapeRatio = clampNumber(options.shapeHeightPercent, 18, 46, 36) / 100;
@@ -2638,7 +2808,7 @@
               y: topPadding + Math.max(0, artHeight - artLift),
               width: moduleWidth,
               height: scanLaneHeight + artLift,
-              fill: BARCODE_INK,
+              fill: inkColor,
             });
           }
         } else {
@@ -2647,7 +2817,7 @@
             y: topPadding + (heightRatio < 1 ? (barHeight - baseHeight) : 0),
             width: segment.width * moduleWidth,
             height: heightRatio < 1 ? baseHeight : barHeight,
-            fill: BARCODE_INK,
+            fill: inkColor,
           });
         }
       }
@@ -2661,7 +2831,7 @@
       y: item.y !== undefined ? item.y : textY,
       anchor: item.anchor || "middle",
       size: item.size || textSize,
-      fill: BARCODE_INK,
+      fill: inkColor,
       fontFamily,
       fontWeight,
       text: item.text,
@@ -5392,7 +5562,7 @@
   function createDefaultState() {
     const qrValues = {};
     for (const type of QR_TYPES) {
-      qrValues[type.id] = getDefaultValuesForType(type.id);
+      qrValues[type.id] = getBlankValuesForType(type.id);
     }
 
     return {
@@ -5401,8 +5571,8 @@
       barcode: {
         group: "ean-upc",
         format: "ean13",
-        digits: "3812345678908",
-        label: "barcode-item",
+        digits: "",
+        label: "",
         moduleWidth: 3,
         barHeight: 132,
         quietZone: 11,
@@ -5444,12 +5614,34 @@
     const type = qrTypeMap[typeId];
     const values = {};
     for (const field of type.fields) {
-      const initial = typeof field.transformDefault === "function"
-        ? field.transformDefault(field.defaultValue)
-        : field.defaultValue;
+      const initial = getQrFieldExampleValue(field);
       values[field.key] = initial !== undefined ? initial : defaultValueForFieldType(field.type);
     }
     return values;
+  }
+
+  function getBlankValuesForType(typeId) {
+    const type = qrTypeMap[typeId];
+    const values = {};
+    for (const field of type.fields) {
+      if (field.type === "checkbox") {
+        values[field.key] = false;
+      } else if (field.type === "select") {
+        values[field.key] = field.defaultValue !== undefined
+          ? field.defaultValue
+          : ((field.options && field.options[0] && field.options[0].value) || "");
+      } else {
+        values[field.key] = "";
+      }
+    }
+    return values;
+  }
+
+  function getQrFieldExampleValue(field) {
+    if (typeof field.transformDefault === "function") {
+      return field.transformDefault(field.defaultValue);
+    }
+    return field.defaultValue;
   }
 
   function defaultValueForFieldType(type) {

@@ -1285,6 +1285,11 @@ button {
   color: #2f6e5c;
 }
 
+.preview-badge.preview {
+  background: #eef1f5;
+  color: #9099a8;
+}
+
 .preview-canvas {
   display: grid;
   place-items: center;
@@ -1301,6 +1306,10 @@ button {
 .preview-canvas svg {
   max-width: 100%;
   height: auto;
+}
+
+.preview-canvas.is-preview svg {
+  filter: saturate(0.72);
 }
 
 .preview-placeholder {
@@ -1329,6 +1338,10 @@ button {
   font-family: Consolas, "Courier New", monospace;
 }
 
+.payload-box.placeholder {
+  color: #a0a8b6;
+}
+
 .summary-list {
   display: grid;
   gap: 12px;
@@ -1353,6 +1366,11 @@ button {
   margin: 0;
   color: var(--muted);
   text-align: right;
+}
+
+.summary-list.placeholder .summary-row dt,
+.summary-list.placeholder .summary-row dd {
+  color: #9da5b4;
 }
 
 .self-check-status {
@@ -1653,6 +1671,11 @@ body[data-theme="dark"] .preview-badge.qr {
   color: #c3ebdb;
 }
 
+body[data-theme="dark"] .preview-badge.preview {
+  background: rgba(255, 255, 255, 0.08);
+  color: #aab2c0;
+}
+
 body[data-theme="dark"] .status-strip {
   background: rgba(213, 138, 98, 0.12);
   border-color: rgba(213, 138, 98, 0.18);
@@ -1685,6 +1708,12 @@ body[data-theme="dark"] .payload-box {
   color: #edf1fb;
 }
 
+body[data-theme="dark"] .payload-box.placeholder,
+body[data-theme="dark"] .summary-list.placeholder .summary-row dt,
+body[data-theme="dark"] .summary-list.placeholder .summary-row dd {
+  color: #8f98a8;
+}
+
 body[data-theme="dark"] .summary-row {
   background: #131923;
 }
@@ -1692,6 +1721,11 @@ body[data-theme="dark"] .summary-row {
 body[data-theme="dark"] .summary-row dt,
 body[data-theme="dark"] .field span {
   color: #f5f7fc;
+}
+
+body[data-theme="dark"] .summary-list.placeholder .summary-row dt,
+body[data-theme="dark"] .summary-list.placeholder .summary-row dd {
+  color: #8f98a8;
 }
 
 body[data-theme="dark"] .font-chip.active {
