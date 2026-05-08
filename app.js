@@ -82,8 +82,8 @@
       short: "VC",
       description: "Share contact details.",
       fields: [
-        { key: "firstName", label: "First name", type: "text", required: true, defaultValue: "Anna", placeholder: "First name" },
-        { key: "lastName", label: "Last name", type: "text", required: true, defaultValue: "Kovacs", placeholder: "Last name" },
+        { key: "firstName", label: "First name", type: "text", defaultValue: "Anna", placeholder: "First name" },
+        { key: "lastName", label: "Last name", type: "text", defaultValue: "Kovacs", placeholder: "Last name" },
         { key: "mobile", label: "Mobile number", type: "tel", defaultValue: "+36123456789", placeholder: "Mobile number", span: 2 },
         { key: "phone", label: "Phone", type: "tel", defaultValue: "+3615550022", placeholder: "Phone" },
         { key: "fax", label: "Fax", type: "tel", defaultValue: "+3615550099", placeholder: "Fax" },
@@ -235,8 +235,8 @@
       short: "VC+",
       description: "Extended contact details for richer business cards.",
       fields: [
-        { key: "firstName", label: "First name", type: "text", required: true, defaultValue: "Peter" },
-        { key: "lastName", label: "Last name", type: "text", required: true, defaultValue: "Nagy" },
+        { key: "firstName", label: "First name", type: "text", defaultValue: "Peter" },
+        { key: "lastName", label: "Last name", type: "text", defaultValue: "Nagy" },
         { key: "company", label: "Company", type: "text", defaultValue: "Danube Logistics" },
         { key: "title", label: "Title", type: "text", defaultValue: "Operations Manager" },
         { key: "mobile", label: "Mobile number", type: "tel", defaultValue: "+36201234567" },
@@ -338,7 +338,7 @@
       short: "APP",
       description: "Share links to your app stores and app site.",
       fields: [
-        { key: "name", label: "App name", type: "text", required: true, defaultValue: "Warehouse Tracker" },
+        { key: "name", label: "App name", type: "text", defaultValue: "Warehouse Tracker" },
         { key: "website", label: "Website", type: "url", defaultValue: "https://example.com/app" },
         { key: "iosUrl", label: "iOS App Store URL", type: "url", defaultValue: "https://apps.apple.com/app/id123456789" },
         { key: "androidUrl", label: "Android Play Store URL", type: "url", defaultValue: "https://play.google.com/store/apps/details?id=com.example.app" },
@@ -356,7 +356,7 @@
       short: "BIZ",
       description: "Provide company information in one scan.",
       fields: [
-        { key: "name", label: "Business name", type: "text", required: true, defaultValue: "Northline Trade Ltd." },
+        { key: "name", label: "Business name", type: "text", defaultValue: "Northline Trade Ltd." },
         { key: "website", label: "Website", type: "url", defaultValue: "https://example.com" },
         { key: "phone", label: "Phone", type: "tel", defaultValue: "+3615550000" },
         { key: "email", label: "Email", type: "email", defaultValue: "info@example.com" },
@@ -364,6 +364,9 @@
         { key: "hours", label: "Opening hours", type: "text", defaultValue: "Mon-Fri 08:00-18:00" },
         { key: "notes", label: "Notes", type: "textarea", defaultValue: "Call before arrival for loading slot confirmation." },
       ],
+      validate(values) {
+        return atLeastOneFilled(values, ["name", "website", "phone", "email", "address", "hours", "notes"], "Add at least one business detail.");
+      },
       build(values) {
         return buildBusinessCard(values);
       },
@@ -393,14 +396,17 @@
       short: "EVT",
       description: "Create a calendar-style QR for an event.",
       fields: [
-        { key: "title", label: "Event title", type: "text", required: true, defaultValue: "Supplier Meeting" },
-        { key: "location", label: "Location", type: "text", required: true, defaultValue: "Budapest HQ - Room 4" },
-        { key: "start", label: "Start", type: "datetime-local", required: true, defaultValue: "2026-05-14T09:00" },
-        { key: "end", label: "End", type: "datetime-local", defaultValue: "2026-05-14T10:30" },
+        { key: "title", label: "Event title", type: "text", defaultValue: "Supplier Meeting" },
+        { key: "location", label: "Location", type: "text", defaultValue: "Budapest HQ - Room 4" },
+        { key: "start", label: "Start", type: "datetime-local", required: true, defaultValue: "2026-05-14T09:00", span: 2 },
+        { key: "end", label: "End", type: "datetime-local", defaultValue: "2026-05-14T10:30", span: 2 },
         { key: "description", label: "Description", type: "textarea", defaultValue: "Quarterly operations review and loading forecast." },
         { key: "organizerEmail", label: "Organizer email", type: "email", defaultValue: "events@example.com" },
         { key: "url", label: "Reference URL", type: "url", defaultValue: "https://example.com/events/q2-review" },
       ],
+      validate(values) {
+        return safeTrim(values.start) ? "" : "Add at least a start time for the event.";
+      },
       build(values) {
         return buildCalendarEvent(values);
       },
@@ -452,12 +458,15 @@
       description: "Share a coupon, code, and landing link.",
       fields: [
         { key: "businessName", label: "Business name", type: "text", defaultValue: "Northline Trade" },
-        { key: "offerTitle", label: "Offer title", type: "text", required: true, defaultValue: "Spring discount" },
+        { key: "offerTitle", label: "Offer title", type: "text", defaultValue: "Spring discount" },
         { key: "couponCode", label: "Coupon code", type: "text", defaultValue: "SPRING15" },
         { key: "discount", label: "Discount", type: "text", defaultValue: "15% off" },
         { key: "validUntil", label: "Valid until", type: "date", defaultValue: "2026-06-30" },
         { key: "url", label: "Landing URL", type: "url", defaultValue: "https://example.com/coupons/spring15" },
       ],
+      validate(values) {
+        return atLeastOneFilled(values, ["businessName", "offerTitle", "couponCode", "discount", "validUntil", "url"], "Add at least one coupon detail.");
+      },
       build(values) {
         return buildCouponPayload(values);
       },
@@ -469,10 +478,13 @@
       description: "Collect written feedback through a link or contact route.",
       fields: [
         { key: "businessName", label: "Business name", type: "text", defaultValue: "Northline Trade" },
-        { key: "url", label: "Feedback form URL", type: "url", required: true, defaultValue: "https://example.com/feedback" },
+        { key: "url", label: "Feedback form URL", type: "url", defaultValue: "https://example.com/feedback" },
         { key: "prompt", label: "Prompt text", type: "textarea", defaultValue: "Tell us what worked well and what we should improve." },
         { key: "email", label: "Fallback email", type: "email", defaultValue: "feedback@example.com" },
       ],
+      validate(values) {
+        return atLeastOneFilled(values, ["businessName", "url", "prompt", "email"], "Add at least one feedback detail.");
+      },
       build(values) {
         return buildFeedbackPayload(values);
       },
@@ -484,10 +496,13 @@
       description: "Ask customers to leave a rating or review.",
       fields: [
         { key: "businessName", label: "Business name", type: "text", defaultValue: "Northline Trade" },
-        { key: "url", label: "Rating URL", type: "url", required: true, defaultValue: "https://example.com/review" },
+        { key: "url", label: "Rating URL", type: "url", defaultValue: "https://example.com/review" },
         { key: "platform", label: "Platform", type: "text", defaultValue: "Google Reviews" },
         { key: "message", label: "Message", type: "textarea", defaultValue: "If we helped you today, please leave a quick rating." },
       ],
+      validate(values) {
+        return atLeastOneFilled(values, ["businessName", "url", "platform", "message"], "Add at least one rating detail.");
+      },
       build(values) {
         return buildRatingPayload(values);
       },
@@ -4870,9 +4885,16 @@
   function buildVCard(values, extended) {
     const firstName = safeTrim(values.firstName);
     const lastName = safeTrim(values.lastName);
-    const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+    const company = safeTrim(values.company);
+    const fullName = [firstName, lastName].filter(Boolean).join(" ").trim()
+      || company
+      || safeTrim(values.email)
+      || normalizePhone(values.mobile || "")
+      || normalizePhone(values.phone || "")
+      || normalizePhone(values.workPhone || "")
+      || safeTrim(values.website);
     if (!fullName) {
-      throw new Error("A vCard needs at least a first or last name.");
+      throw new Error("A vCard needs at least one contact detail.");
     }
 
     const lines = [
@@ -4882,7 +4904,7 @@
       `FN:${escapeVCard(fullName)}`,
     ];
 
-    if (values.company) lines.push(`ORG:${escapeVCard(values.company)}`);
+    if (company) lines.push(`ORG:${escapeVCard(company)}`);
     if (values.title) lines.push(`TITLE:${escapeVCard(values.title)}`);
     if (values.mobile) lines.push(`TEL;TYPE=CELL:${normalizePhone(values.mobile)}`);
     if (values.phone) lines.push(`TEL;TYPE=VOICE:${normalizePhone(values.phone)}`);
@@ -4994,31 +5016,53 @@
   }
 
   function buildAppLinks(values) {
-    const lines = [`APP: ${safeTrim(values.name) || "App"}`];
-    if (values.website) lines.push(`Website: ${normalizeHttpUrl(values.website)}`);
-    if (values.iosUrl) lines.push(`iOS: ${normalizeHttpUrl(values.iosUrl)}`);
-    if (values.androidUrl) lines.push(`Android: ${normalizeHttpUrl(values.androidUrl)}`);
+    const appName = safeTrim(values.name);
+    const linkRows = [];
+    if (values.website) linkRows.push(["Website", normalizeHttpUrl(values.website)]);
+    if (values.iosUrl) linkRows.push(["iOS", normalizeHttpUrl(values.iosUrl)]);
+    if (values.androidUrl) linkRows.push(["Android", normalizeHttpUrl(values.androidUrl)]);
+
+    if (!linkRows.length) {
+      throw new Error("Add at least one app link.");
+    }
+
+    if (linkRows.length === 1 && !appName) {
+      return linkRows[0][1];
+    }
+
+    const lines = [];
+    if (appName) {
+      lines.push(`APP: ${appName}`);
+    } else if (linkRows.length > 1) {
+      lines.push("APP LINKS");
+    }
+
+    lines.push(...linkRows.map(([label, url]) => `${label}: ${url}`));
     return lines.join("\n");
   }
 
   function buildBusinessCard(values) {
-    const lines = [`BUSINESS: ${safeTrim(values.name)}`];
+    const lines = [];
+    if (values.name) lines.push(`BUSINESS: ${safeTrim(values.name)}`);
     if (values.website) lines.push(`Website: ${normalizeHttpUrl(values.website)}`);
     if (values.phone) lines.push(`Phone: ${normalizePhone(values.phone)}`);
     if (values.email) lines.push(`Email: ${safeTrim(values.email)}`);
     if (values.address) lines.push(`Address: ${safeTrim(values.address)}`);
     if (values.hours) lines.push(`Hours: ${safeTrim(values.hours)}`);
     if (values.notes) lines.push(`Notes: ${normalizeLineEndings(values.notes).trim()}`);
+    if (!lines.length) {
+      throw new Error("Add at least one business detail.");
+    }
     return lines.join("\n");
   }
 
   function buildCalendarEvent(values) {
-    const title = safeTrim(values.title);
+    const title = safeTrim(values.title) || "Event";
     const location = safeTrim(values.location);
     const start = formatDateTimeForIcs(values.start);
     const end = formatDateTimeForIcs(values.end);
-    if (!title || !location || !start) {
-      throw new Error("Event QR needs a title, location, and start time.");
+    if (!start) {
+      throw new Error("Event QR needs at least a start time.");
     }
 
     const lines = [
@@ -5026,10 +5070,10 @@
       "VERSION:2.0",
       "PRODID:-//Barcode QR Studio//EN",
       "BEGIN:VEVENT",
-      `SUMMARY:${escapeIcs(values.title)}`,
+      `SUMMARY:${escapeIcs(title)}`,
       `DTSTART:${start}`,
-      `LOCATION:${escapeIcs(values.location)}`,
     ];
+    if (location) lines.push(`LOCATION:${escapeIcs(location)}`);
     if (end) lines.push(`DTEND:${end}`);
     if (values.description) lines.push(`DESCRIPTION:${escapeIcs(values.description)}`);
     if (values.organizerEmail) lines.push(`ORGANIZER:mailto:${safeTrim(values.organizerEmail)}`);
@@ -5057,20 +5101,26 @@
   function buildCouponPayload(values) {
     const lines = [];
     if (values.businessName) lines.push(`BUSINESS: ${safeTrim(values.businessName)}`);
-    lines.push(`COUPON: ${safeTrim(values.offerTitle)}`);
+    if (values.offerTitle) lines.push(`COUPON: ${safeTrim(values.offerTitle)}`);
     if (values.discount) lines.push(`DISCOUNT: ${safeTrim(values.discount)}`);
     if (values.couponCode) lines.push(`CODE: ${safeTrim(values.couponCode)}`);
     if (values.validUntil) lines.push(`VALID UNTIL: ${values.validUntil}`);
     if (values.url) lines.push(`LINK: ${normalizeHttpUrl(values.url)}`);
+    if (!lines.length) {
+      throw new Error("Add at least one coupon detail.");
+    }
     return lines.join("\n");
   }
 
   function buildFeedbackPayload(values) {
     const lines = [];
     if (values.businessName) lines.push(`FEEDBACK FOR: ${safeTrim(values.businessName)}`);
-    lines.push(`FORM: ${normalizeHttpUrl(values.url)}`);
+    if (values.url) lines.push(`FORM: ${normalizeHttpUrl(values.url)}`);
     if (values.prompt) lines.push(`PROMPT: ${normalizeLineEndings(values.prompt).trim()}`);
     if (values.email) lines.push(`EMAIL: ${safeTrim(values.email)}`);
+    if (!lines.length) {
+      throw new Error("Add at least one feedback detail.");
+    }
     return lines.join("\n");
   }
 
@@ -5078,8 +5128,11 @@
     const lines = [];
     if (values.businessName) lines.push(`RATE: ${safeTrim(values.businessName)}`);
     if (values.platform) lines.push(`PLATFORM: ${safeTrim(values.platform)}`);
-    lines.push(`LINK: ${normalizeHttpUrl(values.url)}`);
+    if (values.url) lines.push(`LINK: ${normalizeHttpUrl(values.url)}`);
     if (values.message) lines.push(`MESSAGE: ${normalizeLineEndings(values.message).trim()}`);
+    if (!lines.length) {
+      throw new Error("Add at least one rating detail.");
+    }
     return lines.join("\n");
   }
 
